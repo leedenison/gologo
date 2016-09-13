@@ -4,14 +4,18 @@ import "github.com/AllenDang/w32"
 
 import (
 	"C"
-	"fmt"
 	"syscall"
 	"unsafe"
 	"github.com/leedenison/gologo/timer"
 )
 
+const GRAVITY_VALUE = 5
+const RESISTANCE = 3
+const MAX_SPEED = 40
+
 type shape struct {
 	x, y int
+	colour uint32
 }
 
 type movableshape struct {
@@ -24,7 +28,19 @@ type circle struct {
 	movableshape
 }
 
-var ball = circle{movableshape: movableshape{shape: shape{x: 200, y: 200}, vx: 0, vy: 0}, radius: 40}
+func (s *movableshape) Move() {
+	s.x += s.vx
+	s.y += s.vy
+}
+
+func (s *movableshape) ApplyEnv() {
+	s.vy += GRAVITY_VALUE
+	if (s.vy > MAX_SPEED) {s.vy = MAX_SPEED}
+	s.vx -= RESISTANCE
+	if (s.vx < 0) {s.vx = 0}
+}
+
+var ball = circle{movableshape: movableshape{shape: shape{x: 30, y: 240, colour: RGB(0,255,0)}, vx: 40, vy: -50}, radius: 40}
 
 func MakeIntResource(id uint16) (*uint16) {
     return (*uint16)(unsafe.Pointer(uintptr(id)))
@@ -35,16 +51,19 @@ func RGB(r, g, b byte) (uint32) {
 }
 
 func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) (uintptr) {
-	fmt.Printf("Tick!\n")
+	ball.ApplyEnv()
+	ball.Move()
 
+	hdc := w32.GetDC(hwnd)
+	OnPaint(hdc)
+	w32.ReleaseDC(hwnd, hdc)
+	
 	return 0
 }
 
 func OnPaint(hdc w32.HDC) {
-	green := RGB(0, 255, 0)
-
 	// Create brush
-    lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(green)}
+    lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(ball.colour)}
     hBrush := w32.CreateBrushIndirect(&lBrush)
 
     // Create pen
@@ -54,7 +73,7 @@ func OnPaint(hdc w32.HDC) {
     previousPen := w32.SelectObject(hdc, w32.HGDIOBJ(hPen))
 
     // Draw ball
-    w32.Ellipse(hdc, ball.x, ball.y, ball.radius * 2, ball.radius * 2)
+    w32.Ellipse(hdc, ball.x, ball.y, ball.x + ball.radius * 2, ball.y + ball.radius * 2)
 
     // Reselect previous pen
     w32.SelectObject(hdc, previousPen)

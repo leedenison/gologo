@@ -10,6 +10,22 @@ import (
 	"github.com/leedenison/gologo/timer"
 )
 
+type shape struct {
+	x, y int
+}
+
+type movableshape struct {
+	vx, vy int
+	shape
+}
+
+type circle struct {
+	radius int
+	movableshape
+}
+
+var ball = circle{movableshape: movableshape{shape: shape{x: 200, y: 200}, vx: 0, vy: 0}, radius: 40}
+
 func MakeIntResource(id uint16) (*uint16) {
     return (*uint16)(unsafe.Pointer(uintptr(id)))
 }
@@ -37,9 +53,8 @@ func OnPaint(hdc w32.HDC) {
     // Select pen
     previousPen := w32.SelectObject(hdc, w32.HGDIOBJ(hPen))
 
-    // Draw line
-    w32.MoveToEx(hdc, 0, 0, nil)
-    w32.LineTo(hdc, 200, 200)
+    // Draw ball
+    w32.Ellipse(hdc, ball.x, ball.y, ball.radius * 2, ball.radius * 2)
 
     // Reselect previous pen
     w32.SelectObject(hdc, previousPen)

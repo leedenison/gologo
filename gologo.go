@@ -2,9 +2,37 @@ package main
 
 import "github.com/AllenDang/w32"
 
-import "fmt"
-import "syscall"
-import "unsafe"
+import (
+	"C"
+	"fmt"
+	"syscall"
+	"unsafe"
+)
+
+var (
+	moduser32 = syscall.NewLazyDLL("user32.dll")
+
+    procSetTimer = moduser32.NewProc("SetTimer")
+    procKillTimer = moduser32.NewProc("KillTimer")
+)
+
+func SetTimer(hwnd w32.HWND, nIDEvent uintptr, uElapse uint32, lpTimerProc uintptr) uintptr {
+	ret, _, _ := procSetTimer.Call(
+		uintptr(hwnd),
+		nIDEvent,
+		uintptr(uElapse),
+		lpTimerProc)
+
+	return ret
+}
+
+func KillTimer(hwnd w32.HWND, nIDEvent uintptr) bool {
+	ret, _, _ := procKillTimer.Call(
+		uintptr(hwnd),
+		nIDEvent)
+
+	return ret != 0
+}
 
 func MakeIntResource(id uint16) (*uint16) {
     return (*uint16)(unsafe.Pointer(uintptr(id)))
@@ -12,6 +40,12 @@ func MakeIntResource(id uint16) (*uint16) {
 
 func RGB(r, g, b byte) (uint32) {
 	return (uint32(r) | uint32(g) << 8 | uint32(b) << 16)
+}
+
+func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) (uintptr) {
+	fmt.Printf("Tick!\n")
+
+	return 0
 }
 
 func OnPaint(hdc w32.HDC) {
@@ -39,7 +73,7 @@ func OnPaint(hdc w32.HDC) {
     w32.DeleteObject(w32.HGDIOBJ(hBrush))
 }
 
-func WndProc(hWnd w32.HWND, msg uint32, wParam, lParam uintptr) (uintptr) {
+func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) (uintptr) {
 	switch msg {
 	case w32.WM_DESTROY:
 		// 0 = WM_QUIT
@@ -47,23 +81,18 @@ func WndProc(hWnd w32.HWND, msg uint32, wParam, lParam uintptr) (uintptr) {
     case w32.WM_PAINT:
     	var ps w32.PAINTSTRUCT
 
-    	hdc := w32.BeginPaint(hWnd, &ps)
+    	hdc := w32.BeginPaint(hwnd, &ps)
         OnPaint(hdc)
-        w32.EndPaint(hWnd, &ps)
+        w32.EndPaint(hwnd, &ps)
     default:
-        return w32.DefWindowProc(hWnd, msg, wParam, lParam)
+        return w32.DefWindowProc(hwnd, msg, wParam, lParam)
     }
     return 0
 }
 
-func WinMain() int {
-	// Handle to application instance.
-	hInstance := w32.GetModuleHandle("")
-
-	// Registered class name of the window.
-	lpszClassName := syscall.StringToUTF16Ptr("WNDclass")
-
+func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16) (w32.WNDCLASSEX) {
 	var wcex w32.WNDCLASSEX
+
 	// Size of the window object.
 	wcex.Size = uint32(unsafe.Sizeof(wcex))
 
@@ -95,15 +124,31 @@ func WinMain() int {
 	wcex.ClassName = lpszClassName
 	wcex.IconSm = w32.LoadIcon(hInstance, MakeIntResource(w32.IDI_APPLICATION))
 
+	return wcex
+}
+
+const TIMER_ID = 1
+
+func WinMain() int {
+
+	// Handle to application instance.
+	hInstance := w32.GetModuleHandle("")
+
+	// Registered class name of the window.
+	lpszClassName := syscall.StringToUTF16Ptr("WNDclass")
+
+	wcex := CreateWindowClass(hInstance, lpszClassName)
+
 	// Make this window available to other controls
 	w32.RegisterClassEx(&wcex)
 
 	// Create an instance of this window class
-	hWnd := w32.CreateWindowEx(0, lpszClassName, syscall.StringToUTF16Ptr("Simple Go Window!"), w32.WS_OVERLAPPEDWINDOW | w32.WS_VISIBLE, w32.CW_USEDEFAULT, w32.CW_USEDEFAULT, 400, 400, 0, 0, hInstance, nil)
+	hwnd := w32.CreateWindowEx(0, lpszClassName, syscall.StringToUTF16Ptr("Simple Go Window!"), w32.WS_OVERLAPPEDWINDOW | w32.WS_VISIBLE, w32.CW_USEDEFAULT, w32.CW_USEDEFAULT, 400, 400, 0, 0, hInstance, nil)
 
-	w32.ShowWindow(hWnd, w32.SW_SHOWDEFAULT)
-	w32.UpdateWindow(hWnd)
+	w32.ShowWindow(hwnd, w32.SW_SHOWDEFAULT)
+	w32.UpdateWindow(hwnd)
 
+	SetTimer(hwnd, uintptr(TIMER_ID), 1000, syscall.NewCallback(Tick))
    	var msg w32.MSG
    	for {
    		// 0, 0, 0 = retrive all messages from all sources

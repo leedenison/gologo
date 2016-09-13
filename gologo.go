@@ -7,32 +7,8 @@ import (
 	"fmt"
 	"syscall"
 	"unsafe"
+	"github.com/leedenison/gologo/timer"
 )
-
-var (
-	moduser32 = syscall.NewLazyDLL("user32.dll")
-
-    procSetTimer = moduser32.NewProc("SetTimer")
-    procKillTimer = moduser32.NewProc("KillTimer")
-)
-
-func SetTimer(hwnd w32.HWND, nIDEvent uintptr, uElapse uint32, lpTimerProc uintptr) uintptr {
-	ret, _, _ := procSetTimer.Call(
-		uintptr(hwnd),
-		nIDEvent,
-		uintptr(uElapse),
-		lpTimerProc)
-
-	return ret
-}
-
-func KillTimer(hwnd w32.HWND, nIDEvent uintptr) bool {
-	ret, _, _ := procKillTimer.Call(
-		uintptr(hwnd),
-		nIDEvent)
-
-	return ret != 0
-}
 
 func MakeIntResource(id uint16) (*uint16) {
     return (*uint16)(unsafe.Pointer(uintptr(id)))
@@ -148,7 +124,7 @@ func WinMain() int {
 	w32.ShowWindow(hwnd, w32.SW_SHOWDEFAULT)
 	w32.UpdateWindow(hwnd)
 
-	SetTimer(hwnd, uintptr(TIMER_ID), 1000, syscall.NewCallback(Tick))
+	timer.SetTimer(hwnd, uintptr(TIMER_ID), 1000, syscall.NewCallback(Tick))
    	var msg w32.MSG
    	for {
    		// 0, 0, 0 = retrive all messages from all sources

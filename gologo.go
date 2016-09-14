@@ -5,6 +5,7 @@ import "github.com/AllenDang/w32"
 
 import (
 	"C"
+	"fmt"
 	"syscall"
 	"unsafe"
 	"github.com/leedenison/gologo/timer"
@@ -15,6 +16,7 @@ const CIRCLE_RESISTANCE = 3
 const MAX_SPEED = 40
 const TIMER_ID = 1
 const WALL_WIDTH = 10
+const GAP_WIDTH = 80
 
 type shape struct {
 	x, y int32
@@ -60,10 +62,23 @@ func (c *circle) ApplyRst() {
 }
 
 var ball = circle{}
+// TODO Don't know go conventions
+// - structures for the var name seems more sensible but then
+// seems to be trying hard to be confusing
 var walls []structure
 
 func MakeIntResource(id uint16) (*uint16) {
     return (*uint16)(unsafe.Pointer(uintptr(id)))
+}
+
+func Clamp(value, min, max int32) (int32) {
+	switch {
+	case value < min:
+		return min
+	case value > max:
+		return max
+	}
+	return value
 }
 
 func RGB(r, g, b byte) (uint32) {
@@ -77,7 +92,7 @@ func CreateObjects() {
 					vx: -50, vy: 40},
 				radius: 20, resistance: CIRCLE_RESISTANCE}
 	
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 4; i++ {
 		wall := structure{}
 		wall.colour = RGB(0,0,0)
 		walls = append(walls, wall)
@@ -95,7 +110,15 @@ func UpdateObjects(hwnd w32.HWND) {
 	walls[1].x = winRect.Bottom - WALL_WIDTH
 	walls[1].bottomx = winRect.Bottom
 	walls[1].bottomy = winRect.Right
-	// TODO: Add the two parts of the wall with a hole
+	// Top right wall
+	walls[2].y = winRect.Right - WALL_WIDTH
+	walls[2].bottomx = winRect.Bottom / 2 - GAP_WIDTH / 2
+	walls[2].bottomy = winRect.Right
+	// Bottom right wall
+	walls[3].x = winRect.Bottom / 2 + GAP_WIDTH / 2
+	walls[3].y = winRect.Right - WALL_WIDTH
+	walls[3].bottomx = winRect.Bottom
+	walls[3].bottomy = winRect.Right
 }
 
 func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, 
@@ -106,20 +129,52 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 						Bottom: ball.x + ball.radius * 2, 
 						Right: ball.y + ball.radius * 2}
 	// Clear ball
-	w32.InvalidateRect(hwnd, &ballRect, true)
+	w32.InvalidateRect(hwnd, &ballRect, false)
 
 	// Get balls new position
 	ball.ApplyGrav()
 	ball.ApplyRst()
 	ball.Move()
+	
+	fmt.Printf("---- New Tick ----\n")
 
-	// Check if we've hit the edge of the screen
-	// Don't worry about top - we could come back on
-	// or the right - the walls will stop us or we've won
+	// Check for collisions with walls
+	for i := range walls {
+		closestX := Clamp(ball.x, walls[i].x, walls[i].bottomx)
+		closestY := Clamp(ball.y, walls[i].y, walls[i].bottomy)
+		fmt.Printf("ballX = %v ", ball.x)
+		fmt.Printf("ballY = %v\n", ball.y)
+		fmt.Printf("ClosestX = %v ", closestX)
+		fmt.Printf("ClosestY = %v\n", closestY)
+
+		distanceX := ball.x - closestX
+		distanceY := ball.y - closestY
+		fmt.Printf("distanceX = %v ", distanceX)
+		fmt.Printf("distanceY = %v\n", distanceY)
+
+		distanceSqrd := distanceX * distanceX + distanceY * distanceY
+		fmt.Printf("ds = %v radius sq = %v\n", distanceSqrd, ball.radius * ball.radius)
+		if distanceSqrd < ball.radius * ball.radius {
+			// hit a wall
+			timer.KillTimer(hwnd, uintptr(TIMER_ID))
+			fmt.Printf("Hit wall %v\n", i)
+		}
+	}
+
+	// Check if we've gone our right
 	winRect := w32.GetClientRect(hwnd)
-	if (ball.y <= WALL_WIDTH ||
-		ball.x + ball.radius * 2 >= winRect.Bottom - WALL_WIDTH) {
+	if (ball.y >= winRect.Right) {
 		timer.KillTimer(hwnd, uintptr(TIMER_ID))
+		fmt.Printf("Win!\nball y = %v winright = %v\n", ball.y, winRect.Right)
+	}
+
+	// Check if we've hit the left or bottom of the screen
+	if (ball.y + ball.radius * 2 <= 0 ||
+		ball.x >= winRect.Bottom) {
+		timer.KillTimer(hwnd, uintptr(TIMER_ID))
+		fmt.Printf("Went out of play left or down\n")
+		fmt.Printf("by = %v br = %v\n", ball.y, ball.radius)
+		fmt.Printf("bx = %v wr Bottom = %v\n", ball.x, winRect.Bottom)
 	}
 
 	hdc := w32.GetDC(hwnd)
@@ -154,13 +209,13 @@ func PaintMovables(hdc w32.HDC) {
 }
 
 func PaintStructures(hdc w32.HDC) {	
-	// Create brush and pen
 
    	if len(walls) == 0 { return }
+	// Create previous brush and pen holder
    	var previousPen, previousBrush w32.HGDIOBJ
 
     for i := range walls {
-		// Create brush and pen
+		// Create brush and pen for this wall
    		lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(walls[i].colour)}
    		hBrush := w32.CreateBrushIndirect(&lBrush)
    		hPen := w32.ExtCreatePen(w32.PS_COSMETIC|w32.PS_SOLID, 1, &lBrush, 0, nil)

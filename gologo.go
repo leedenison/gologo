@@ -105,9 +105,8 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) (uintptr) 
 	// Check if we've hit the edge of the screen
 	// Don't worry about top - we could come back on
 	winRect := w32.GetClientRect(hwnd)
-	if (ball.x <= 0 ||
-		ball.x + ball.radius * 2 >= winRect.Right ||
-		ball.y + ball.radius * 2 >= winRect.Bottom) {
+	if (ball.y <= WALL_WIDTH ||
+		ball.x + ball.radius * 2 >= winRect.Bottom - WALL_WIDTH) {
 		timer.KillTimer(hwnd, uintptr(TIMER_ID))
 	}
 

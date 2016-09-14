@@ -6,12 +6,14 @@ import (
 	"C"
 	"syscall"
 	"unsafe"
+	//"fmt"
 	"github.com/leedenison/gologo/timer"
 )
 
 const GRAVITY_VALUE = 5
 const CIRCLE_RESISTANCE = 3
 const MAX_SPEED = 40
+const TIMER_ID = 1
 
 type shape struct {
 	x, y int
@@ -58,9 +60,18 @@ func RGB(r, g, b byte) (uint32) {
 }
 
 func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) (uintptr) {
+	// Get balls new position
 	ball.ApplyGrav()
 	ball.ApplyRst()
 	ball.Move()
+
+	// Check if we've hit the edge of the screen
+	winRect := w32.GetClientRect(hwnd)
+	if (ball.x <= 0 || ball.y <= 0 ||
+		int32(ball.x + ball.radius * 2) >= winRect.Right ||
+		int32(ball.y + ball.radius * 2) >= winRect.Bottom) {
+		timer.KillTimer(hwnd, uintptr(TIMER_ID))
+	}
 
 	hdc := w32.GetDC(hwnd)
 	OnPaint(hdc)
@@ -144,8 +155,6 @@ func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16) (w32.WNDC
 
 	return wcex
 }
-
-const TIMER_ID = 1
 
 func WinMain() int {
 

@@ -138,6 +138,7 @@ func PaintMovables(hdc w32.HDC) {
 
     // Select pen and store previous
     previousPen := w32.SelectObject(hdc, w32.HGDIOBJ(hPen))
+    previousBrush := w32.SelectObject(hdc, w32.HGDIOBJ(hBrush))
 
     // Draw ball
     w32.Ellipse(hdc, int(ball.y), int(ball.x), int(ball.y + ball.radius * 2),
@@ -149,25 +150,14 @@ func PaintMovables(hdc w32.HDC) {
 
     // Reselect previous pen
     w32.SelectObject(hdc, previousPen)
+    w32.SelectObject(hdc, previousBrush)
 }
 
 func PaintStructures(hdc w32.HDC) {	
 	// Create brush and pen
-	// TODO: Need to work out how to fill the walls with colour
 
-	// TODO: HELP - I make this pen only to store the previous pen
-	// doing this in the results in an undefined variable at select
-	// previous pen time
-  	lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(0)}
-   	hBrush := w32.CreateBrushIndirect(&lBrush)
-   	hPen := w32.ExtCreatePen(w32.PS_COSMETIC|w32.PS_SOLID, 1, &lBrush, 0, nil)
-
-	// Select pen and store previous
-   	previousPen := w32.SelectObject(hdc, w32.HGDIOBJ(hPen))
-
-	// Delete objects
-   	w32.DeleteObject(w32.HGDIOBJ(hPen))
-   	w32.DeleteObject(w32.HGDIOBJ(hBrush))
+   	if len(walls) == 0 { return }
+   	var previousPen, previousBrush w32.HGDIOBJ
 
     for i := range walls {
 		// Create brush and pen
@@ -175,9 +165,16 @@ func PaintStructures(hdc w32.HDC) {
    		hBrush := w32.CreateBrushIndirect(&lBrush)
    		hPen := w32.ExtCreatePen(w32.PS_COSMETIC|w32.PS_SOLID, 1, &lBrush, 0, nil)
 
-	    // Select pen 
-    	w32.SelectObject(hdc, w32.HGDIOBJ(hPen))
-    
+	    // Select pen
+    	oldPen := w32.SelectObject(hdc, w32.HGDIOBJ(hPen))
+    	oldBrush := w32.SelectObject(hdc, w32.HGDIOBJ(hBrush))
+
+		// TODO Seems hideous to do this but don't know what's better    
+    	if i == 0 {
+    		previousPen = oldPen
+    		previousBrush = oldBrush
+    	}
+
     	// Draw wall
     	w32.Rectangle(hdc, int(walls[i].y), int(walls[i].x),
     				int(walls[i].bottomy), int(walls[i].bottomx))
@@ -189,6 +186,7 @@ func PaintStructures(hdc w32.HDC) {
 	
 	// Reselect previous pen
    	w32.SelectObject(hdc, previousPen)		
+   	w32.SelectObject(hdc, previousBrush)
 }
 
 func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) (uintptr) {

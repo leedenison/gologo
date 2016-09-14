@@ -1,5 +1,6 @@
 package main
 
+//TODO: separate out the win32 stuff?
 import "github.com/AllenDang/w32"
 
 import (
@@ -30,6 +31,10 @@ type movableshape struct {
 	shape
 }
 
+// Feels like the Resistable interface and the movableshape
+// struct are actually the same thing but you can't combine them 
+// Also this interface isn't actually used yet but theoretically
+// it could be if we had more than one movable object
 type Resistable interface {
 	ApplyRst()
 }
@@ -66,7 +71,11 @@ func RGB(r, g, b byte) (uint32) {
 }
 
 func CreateObjects() {
-	ball = circle{movableshape: movableshape{shape: shape{x: 240, y: 30, colour: RGB(0,255,0)}, vx: -50, vy: 40}, radius: 20, resistance: CIRCLE_RESISTANCE}
+	ball = circle{movableshape: movableshape{
+					shape: shape{
+						x: 240, y: 30, colour: RGB(0,255,0)},
+					vx: -50, vy: 40},
+				radius: 20, resistance: CIRCLE_RESISTANCE}
 	
 	for i := 0; i < 2; i++ {
 		wall := structure{}
@@ -86,9 +95,11 @@ func UpdateObjects(hwnd w32.HWND) {
 	walls[1].x = winRect.Bottom - WALL_WIDTH
 	walls[1].bottomx = winRect.Bottom
 	walls[1].bottomy = winRect.Right
+	// TODO: Add the two parts of the wall with a hole
 }
 
-func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) (uintptr) {
+func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, 
+			dwTime uint16) (uintptr) {
 	// TODO: Need to mutex this so we don't enter twice
 	// Get ball rect
 	ballRect := w32.RECT{Left: ball.y, Top: ball.x,
@@ -104,6 +115,7 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) (uintptr) 
 
 	// Check if we've hit the edge of the screen
 	// Don't worry about top - we could come back on
+	// or the right - the walls will stop us or we've won
 	winRect := w32.GetClientRect(hwnd)
 	if (ball.y <= WALL_WIDTH ||
 		ball.x + ball.radius * 2 >= winRect.Bottom - WALL_WIDTH) {
@@ -119,6 +131,7 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) (uintptr) 
 
 func PaintMovables(hdc w32.HDC) {
 	// Create brush and pen
+	// TODO: Need to work out how to fill the ball with colour
     lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(ball.colour)}
     hBrush := w32.CreateBrushIndirect(&lBrush)
     hPen := w32.ExtCreatePen(w32.PS_COSMETIC|w32.PS_SOLID, 1, &lBrush, 0, nil)
@@ -127,7 +140,8 @@ func PaintMovables(hdc w32.HDC) {
     previousPen := w32.SelectObject(hdc, w32.HGDIOBJ(hPen))
 
     // Draw ball
-    w32.Ellipse(hdc, int(ball.y), int(ball.x), int(ball.y + ball.radius * 2), int(ball.x + ball.radius * 2))
+    w32.Ellipse(hdc, int(ball.y), int(ball.x), int(ball.y + ball.radius * 2),
+    			 int(ball.x + ball.radius * 2))
 
     // Delete objects
     w32.DeleteObject(w32.HGDIOBJ(hPen))
@@ -139,6 +153,11 @@ func PaintMovables(hdc w32.HDC) {
 
 func PaintStructures(hdc w32.HDC) {	
 	// Create brush and pen
+	// TODO: Need to work out how to fill the walls with colour
+
+	// TODO: HELP - I make this pen only to store the previous pen
+	// doing this in the results in an undefined variable at select
+	// previous pen time
   	lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(0)}
    	hBrush := w32.CreateBrushIndirect(&lBrush)
    	hPen := w32.ExtCreatePen(w32.PS_COSMETIC|w32.PS_SOLID, 1, &lBrush, 0, nil)
@@ -178,12 +197,14 @@ func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) (uintptr) {
 		// 0 = WM_QUIT
         w32.PostQuitMessage(0)
     case w32.WM_PAINT:
+    	// On initial paint
     	var ps w32.PAINTSTRUCT
 
     	hdc := w32.BeginPaint(hwnd, &ps)
         PaintMovables(hdc)
         w32.EndPaint(hwnd, &ps)
     case w32.WM_SIZE:
+    	// On resize
     	var ps w32.PAINTSTRUCT
 
     	hdc := w32.BeginPaint(hwnd, &ps)

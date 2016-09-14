@@ -10,7 +10,7 @@ import (
 )
 
 const GRAVITY_VALUE = 5
-const RESISTANCE = 3
+const CIRCLE_RESISTANCE = 3
 const MAX_SPEED = 40
 
 type shape struct {
@@ -23,8 +23,12 @@ type movableshape struct {
 	shape
 }
 
+type Resistable interface {
+	ApplyRst()
+}
+
 type circle struct {
-	radius int
+	radius, resistance int
 	movableshape
 }
 
@@ -33,14 +37,17 @@ func (s *movableshape) Move() {
 	s.y += s.vy
 }
 
-func (s *movableshape) ApplyEnv() {
+func (s *movableshape) ApplyGrav() {
 	s.vy += GRAVITY_VALUE
 	if (s.vy > MAX_SPEED) {s.vy = MAX_SPEED}
-	s.vx -= RESISTANCE
-	if (s.vx < 0) {s.vx = 0}
 }
 
-var ball = circle{movableshape: movableshape{shape: shape{x: 30, y: 240, colour: RGB(0,255,0)}, vx: 40, vy: -50}, radius: 40}
+func (c *circle) ApplyRst() {
+	c.vx -= c.resistance
+	if (c.vx < 0) {c.vx = 0}
+}
+
+var ball = circle{movableshape: movableshape{shape: shape{x: 30, y: 240, colour: RGB(0,255,0)}, vx: 40, vy: -50}, radius: 40, resistance: CIRCLE_RESISTANCE}
 
 func MakeIntResource(id uint16) (*uint16) {
     return (*uint16)(unsafe.Pointer(uintptr(id)))
@@ -51,7 +58,8 @@ func RGB(r, g, b byte) (uint32) {
 }
 
 func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) (uintptr) {
-	ball.ApplyEnv()
+	ball.ApplyGrav()
+	ball.ApplyRst()
 	ball.Move()
 
 	hdc := w32.GetDC(hwnd)
@@ -158,7 +166,7 @@ func WinMain() int {
 	w32.ShowWindow(hwnd, w32.SW_SHOWDEFAULT)
 	w32.UpdateWindow(hwnd)
 
-	timer.SetTimer(hwnd, uintptr(TIMER_ID), 1000, syscall.NewCallback(Tick))
+	timer.SetTimer(hwnd, uintptr(TIMER_ID), 250, syscall.NewCallback(Tick))
    	var msg w32.MSG
    	for {
    		// 0, 0, 0 = retrive all messages from all sources

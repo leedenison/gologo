@@ -49,7 +49,7 @@ func (c *circle) ApplyRst() {
 	if (c.vx < 0) {c.vx = 0}
 }
 
-var ball = circle{movableshape: movableshape{shape: shape{x: 30, y: 240, colour: RGB(0,255,0)}, vx: 40, vy: -50}, radius: 40, resistance: CIRCLE_RESISTANCE}
+var ball = circle{movableshape: movableshape{shape: shape{x: 30, y: 240, colour: RGB(0,255,0)}, vx: 40, vy: -50}, radius: 20, resistance: CIRCLE_RESISTANCE}
 
 func MakeIntResource(id uint16) (*uint16) {
     return (*uint16)(unsafe.Pointer(uintptr(id)))
@@ -60,14 +60,23 @@ func RGB(r, g, b byte) (uint32) {
 }
 
 func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) (uintptr) {
+	// TODO: Need to mutex this so we don't enter twice
+	// Get ball rect
+	ballRect := w32.RECT{Left: int32(ball.x), Top: int32(ball.y),
+						Bottom: int32(ball.y + ball.radius * 2), 
+						Right: int32(ball.x + ball.radius * 2)}
+	// Clear ball
+	w32.InvalidateRect(hwnd, &ballRect, true)
+
 	// Get balls new position
 	ball.ApplyGrav()
 	ball.ApplyRst()
 	ball.Move()
 
 	// Check if we've hit the edge of the screen
+	// Don't worry about top - we could come back on
 	winRect := w32.GetClientRect(hwnd)
-	if (ball.x <= 0 || ball.y <= 0 ||
+	if (ball.x <= 0 ||
 		int32(ball.x + ball.radius * 2) >= winRect.Right ||
 		int32(ball.y + ball.radius * 2) >= winRect.Bottom) {
 		timer.KillTimer(hwnd, uintptr(TIMER_ID))
@@ -175,7 +184,7 @@ func WinMain() int {
 	w32.ShowWindow(hwnd, w32.SW_SHOWDEFAULT)
 	w32.UpdateWindow(hwnd)
 
-	timer.SetTimer(hwnd, uintptr(TIMER_ID), 250, syscall.NewCallback(Tick))
+	timer.SetTimer(hwnd, uintptr(TIMER_ID), 100, syscall.NewCallback(Tick))
    	var msg w32.MSG
    	for {
    		// 0, 0, 0 = retrive all messages from all sources

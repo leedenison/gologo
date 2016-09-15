@@ -6,10 +6,9 @@ import "github.com/AllenDang/w32"
 import (
 	"C"
 	"fmt"
-	//"github.com/leedenison/gologo/gologowin"
+	"github.com/leedenison/gologo/gologowin"
 	"github.com/leedenison/gologo/w32ext"
 	"syscall"
-	"unsafe"
 )
 
 const GRAVITY_VALUE = 5
@@ -21,7 +20,6 @@ const GAP_WIDTH = 80
 
 type shape struct {
 	x, y   int32
-	colour uint32
 }
 
 type structure struct {
@@ -80,6 +78,14 @@ var ball = circle{}
 // seems to be trying hard to be confusing
 var walls []structure
 
+const PEN_BALL = 0
+const PEN_WALL = 1
+
+var pens = map[int]*w32ext.Pen { 
+	PEN_BALL: &w32ext.Pen{ Color: w32ext.RGB(0, 255, 0) },
+	PEN_WALL: &w32ext.Pen{ Color: w32ext.RGB(0, 0, 1) },
+}
+
 func Clamp(value, min, max int32) int32 {
 	switch {
 	case value < min:
@@ -91,15 +97,18 @@ func Clamp(value, min, max int32) int32 {
 }
 
 func CreateObjects() {
-	ball = circle{movableshape: movableshape{
-		shape: shape{
-			x: 240, y: 30, colour: w32ext.RGB(0, 255, 0)},
-		vx: -35, vy: 50},
-		radius: 20, resistance: CIRCLE_RESISTANCE}
+	ball = circle{
+		movableshape: movableshape{
+			shape: shape{ x: 240, y: 30 },
+			vx: -35, 
+			vy: 50,
+		},
+		radius: 20, 
+		resistance: CIRCLE_RESISTANCE,
+	}
 
 	for i := 0; i < 4; i++ {
 		wall := structure{}
-		wall.colour = w32ext.RGB(0, 0, 0)
 		walls = append(walls, wall)
 	}
 }
@@ -175,33 +184,22 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 	}
 
 	hdc := w32.GetDC(hwnd)
-	PaintMovables(hdc)
+	wCtx := &w32ext.WindowContext { Window: hwnd, HDC: hdc }
+	PaintMovables(wCtx)
 	w32.ReleaseDC(hwnd, hdc)
 
 	return 0
 }
 
-func PaintMovables(hdc w32.HDC) {
-	// Create brush and pen
-	lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(ball.colour)}
-	hBrush := w32.CreateBrushIndirect(&lBrush)
-	hPen := w32.ExtCreatePen(w32.PS_COSMETIC|w32.PS_SOLID, 1, &lBrush, 0, nil)
-
-	// Select pen and store previous
-	previousPen := w32.SelectObject(hdc, w32.HGDIOBJ(hPen))
-	previousBrush := w32.SelectObject(hdc, w32.HGDIOBJ(hBrush))
-
+func PaintMovables(wCtx *w32ext.WindowContext) {
 	// Draw ball
-	w32.Ellipse(hdc, int(ball.y), int(ball.x), int(ball.y+ball.radius*2),
-		int(ball.x+ball.radius*2))
-
-	// Delete objects
-	w32.DeleteObject(w32.HGDIOBJ(hPen))
-	w32.DeleteObject(w32.HGDIOBJ(hBrush))
-
-	// Reselect previous pen
-	w32.SelectObject(hdc, previousPen)
-	w32.SelectObject(hdc, previousBrush)
+	w32ext.DrawEllipse(
+		wCtx,
+		pens[PEN_BALL], 
+		ball.y, 
+		ball.x, 
+		ball.y+ball.radius*2,
+		ball.x+ball.radius*2)
 }
 
 func PaintStructures(hdc w32.HDC) {
@@ -214,7 +212,7 @@ func PaintStructures(hdc w32.HDC) {
 
 	for i := range walls {
 		// Create brush and pen for this wall
-		lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(walls[i].colour)}
+		lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(pens[PEN_WALL].Color)}
 		hBrush := w32.CreateBrushIndirect(&lBrush)
 		hPen := w32.ExtCreatePen(w32.PS_COSMETIC|w32.PS_SOLID, 1, &lBrush, 0, nil)
 
@@ -247,63 +245,22 @@ func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 	case w32.WM_DESTROY:
 		// 0 = WM_QUIT
 		w32.PostQuitMessage(0)
+	case w32.WM_SIZE:
+		UpdateStructures(hwnd)
+		fallthrough
 	case w32.WM_PAINT:
 		// On initial paint
 		var ps w32.PAINTSTRUCT
 
 		hdc := w32.BeginPaint(hwnd, &ps)
+		wCtx := &w32ext.WindowContext { Window: hwnd, HDC: hdc }
 		PaintStructures(hdc)
-		PaintMovables(hdc)
+		PaintMovables(wCtx)
 		w32.EndPaint(hwnd, &ps)
-	case w32.WM_SIZE:
-		// On resize
-		var ps w32.PAINTSTRUCT
-
-		hdc := w32.BeginPaint(hwnd, &ps)
-		UpdateStructures(hwnd)
-		PaintStructures(hdc)
-		PaintMovables(hdc)
 	default:
 		return w32.DefWindowProc(hwnd, msg, wParam, lParam)
 	}
 	return 0
-}
-
-func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16) w32.WNDCLASSEX {
-	var wcex w32.WNDCLASSEX
-
-	// Size of the window object.
-	wcex.Size = uint32(unsafe.Sizeof(wcex))
-
-	wcex.Style = w32.CS_HREDRAW | w32.CS_VREDRAW
-	// Application loop handler procedure.
-	wcex.WndProc = syscall.NewCallback(WndProc)
-	// Additional bytes to allocate for the window class struct.
-	wcex.ClsExtra = 0
-	// Additional bytes to allocation for the window instance struct.
-	// If an application uses WNDCLASS to register a dialog box created
-	// by using the CLASS directive in the resource file, it must set this
-	// member to DLGWINDOWEXTRA.
-	wcex.WndExtra = 0
-	// A handle to the instance that contains the window procedure for the class.
-	wcex.Instance = hInstance
-
-	// Use default IDI_APPLICATION icon.
-	wcex.Icon = w32.LoadIcon(hInstance, w32ext.MakeIntResource(w32.IDI_APPLICATION))
-
-	// Use default IDC_ARROW mouse cursor.
-	wcex.Cursor = w32.LoadCursor(0, w32ext.MakeIntResource(w32.IDC_ARROW))
-
-	// Assign HBRUSH to background using the standard window color
-	wcex.Background = w32.COLOR_WINDOW + 11
-
-	// Assign name of menu resource
-	wcex.MenuName = nil
-
-	wcex.ClassName = lpszClassName
-	wcex.IconSm = w32.LoadIcon(hInstance, w32ext.MakeIntResource(w32.IDI_APPLICATION))
-
-	return wcex
 }
 
 func WinMain() int {
@@ -314,7 +271,7 @@ func WinMain() int {
 	// Registered class name of the window.
 	lpszClassName := syscall.StringToUTF16Ptr("WNDclass")
 
-	wcex := CreateWindowClass(hInstance, lpszClassName)
+	wcex := gologowin.CreateWindowClass(hInstance, lpszClassName, syscall.NewCallback(WndProc))
 
 	// Make this window available to other controls
 	w32.RegisterClassEx(&wcex)

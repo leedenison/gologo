@@ -202,42 +202,22 @@ func PaintMovables(wCtx *w32ext.WindowContext) {
 		ball.x+ball.radius*2)
 }
 
-func PaintStructures(hdc w32.HDC) {
+func PaintStructures(wCtx *w32ext.WindowContext) {
 
 	if len(walls) == 0 {
 		return
 	}
-	// Create previous brush and pen holder
-	var previousPen, previousBrush w32.HGDIOBJ
 
 	for i := range walls {
-		// Create brush and pen for this wall
-		lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(pens[PEN_WALL].Color)}
-		hBrush := w32.CreateBrushIndirect(&lBrush)
-		hPen := w32.ExtCreatePen(w32.PS_COSMETIC|w32.PS_SOLID, 1, &lBrush, 0, nil)
-
-		// Select pen
-		oldPen := w32.SelectObject(hdc, w32.HGDIOBJ(hPen))
-		oldBrush := w32.SelectObject(hdc, w32.HGDIOBJ(hBrush))
-
-		// TODO Seems hideous to do this but don't know what's better
-		if i == 0 {
-			previousPen = oldPen
-			previousBrush = oldBrush
-		}
-
 		// Draw wall
-		w32.Rectangle(hdc, int(walls[i].y), int(walls[i].x),
-			int(walls[i].bottomy), int(walls[i].bottomx))
-
-		// Delete objects
-		w32.DeleteObject(w32.HGDIOBJ(hPen))
-		w32.DeleteObject(w32.HGDIOBJ(hBrush))
+		w32ext.DrawRectangle(
+			wCtx,
+			pens[PEN_WALL],
+			walls[i].y,
+			walls[i].x,
+			walls[i].bottomy,
+			walls[i].bottomx)
 	}
-
-	// Reselect previous pen
-	w32.SelectObject(hdc, previousPen)
-	w32.SelectObject(hdc, previousBrush)
 }
 
 func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) uintptr {
@@ -254,7 +234,7 @@ func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 
 		hdc := w32.BeginPaint(hwnd, &ps)
 		wCtx := &w32ext.WindowContext { Window: hwnd, HDC: hdc }
-		PaintStructures(hdc)
+		PaintStructures(wCtx)
 		PaintMovables(wCtx)
 		w32.EndPaint(hwnd, &ps)
 	default:

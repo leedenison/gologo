@@ -121,3 +121,12 @@ func DrawEllipse(wCtx *WindowContext, pen *Pen, y int32, x int32, h int32, w int
 
 	ReleaseContext(wCtx)
 }
+
+func DrawRectangle(wCtx *WindowContext, pen *Pen, y int32, x int32, by int32, bx int32) {
+	SelectPen(wCtx, pen)
+
+	// Draw ball
+	w32.Rectangle(wCtx.HDC, int(y), int(x), int(by), int(bx))
+
+	ReleaseContext(wCtx)
+}

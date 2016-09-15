@@ -57,8 +57,13 @@ func (s *movableshape) ApplyGrav() {
 }
 
 func (c *circle) ApplyRst() {
-	c.vy -= c.resistance
-	if (c.vy < 0) {c.vy = 0}
+	if c.vy > 0 {
+		c.vy -= c.resistance
+		if c.vy < 0 {c.vy = 0}
+	} else if c.vy < 0 {
+		c.vy += c.resistance
+		if c.vy > 0 {c.vy = 0}
+	}
 }
 
 var ball = circle{}
@@ -88,9 +93,9 @@ func RGB(r, g, b byte) (uint32) {
 func CreateObjects() {
 	ball = circle{movableshape: movableshape{
 					shape: shape{
-						x: 240, y: 30, colour: RGB(0,255,0)},
-					vx: -50, vy: 40},
-				radius: 20, resistance: CIRCLE_RESISTANCE}
+					  x: 240, y: 30, colour: RGB(0,255,0)},
+					vx: -35, vy: 50},
+				  radius: 20, resistance: CIRCLE_RESISTANCE}
 	
 	for i := 0; i < 4; i++ {
 		wall := structure{}
@@ -99,7 +104,7 @@ func CreateObjects() {
 	}
 }
 
-func UpdateObjects(hwnd w32.HWND) {
+func UpdateStructures(hwnd w32.HWND) {
 	// Get the pane size
 	winRect := w32.GetClientRect(hwnd)
 
@@ -129,31 +134,21 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 						Bottom: ball.x + ball.radius * 2, 
 						Right: ball.y + ball.radius * 2}
 	// Clear ball
-	w32.InvalidateRect(hwnd, &ballRect, false)
+	w32.InvalidateRect(hwnd, &ballRect, true)
 
 	// Get balls new position
 	ball.ApplyGrav()
 	ball.ApplyRst()
 	ball.Move()
 	
-	fmt.Printf("---- New Tick ----\n")
-
 	// Check for collisions with walls
 	for i := range walls {
-		closestX := Clamp(ball.x, walls[i].x, walls[i].bottomx)
-		closestY := Clamp(ball.y, walls[i].y, walls[i].bottomy)
-		fmt.Printf("ballX = %v ", ball.x)
-		fmt.Printf("ballY = %v\n", ball.y)
-		fmt.Printf("ClosestX = %v ", closestX)
-		fmt.Printf("ClosestY = %v\n", closestY)
-
-		distanceX := ball.x - closestX
-		distanceY := ball.y - closestY
-		fmt.Printf("distanceX = %v ", distanceX)
-		fmt.Printf("distanceY = %v\n", distanceY)
+		closestX := Clamp(ball.x + ball.radius, walls[i].x, walls[i].bottomx)
+		closestY := Clamp(ball.y + ball.radius, walls[i].y, walls[i].bottomy)
+		distanceX := ball.x + ball.radius - closestX
+		distanceY := ball.y + ball.radius - closestY
 
 		distanceSqrd := distanceX * distanceX + distanceY * distanceY
-		fmt.Printf("ds = %v radius sq = %v\n", distanceSqrd, ball.radius * ball.radius)
 		if distanceSqrd < ball.radius * ball.radius {
 			// hit a wall
 			timer.KillTimer(hwnd, uintptr(TIMER_ID))
@@ -165,7 +160,11 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 	winRect := w32.GetClientRect(hwnd)
 	if (ball.y >= winRect.Right) {
 		timer.KillTimer(hwnd, uintptr(TIMER_ID))
-		fmt.Printf("Win!\nball y = %v winright = %v\n", ball.y, winRect.Right)
+		if ball.x < 0 {
+			fmt.Printf("Went over wall\n")
+		} else {
+			fmt.Printf("Win!\n")			
+		}
 	}
 
 	// Check if we've hit the left or bottom of the screen
@@ -173,8 +172,6 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 		ball.x >= winRect.Bottom) {
 		timer.KillTimer(hwnd, uintptr(TIMER_ID))
 		fmt.Printf("Went out of play left or down\n")
-		fmt.Printf("by = %v br = %v\n", ball.y, ball.radius)
-		fmt.Printf("bx = %v wr Bottom = %v\n", ball.x, winRect.Bottom)
 	}
 
 	hdc := w32.GetDC(hwnd)
@@ -186,7 +183,6 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 
 func PaintMovables(hdc w32.HDC) {
 	// Create brush and pen
-	// TODO: Need to work out how to fill the ball with colour
     lBrush := w32.LOGBRUSH{LbStyle: w32.BS_SOLID, LbColor: w32.COLORREF(ball.colour)}
     hBrush := w32.CreateBrushIndirect(&lBrush)
     hPen := w32.ExtCreatePen(w32.PS_COSMETIC|w32.PS_SOLID, 1, &lBrush, 0, nil)
@@ -254,6 +250,7 @@ func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) (uintptr) {
     	var ps w32.PAINTSTRUCT
 
     	hdc := w32.BeginPaint(hwnd, &ps)
+        PaintStructures(hdc)
         PaintMovables(hdc)
         w32.EndPaint(hwnd, &ps)
     case w32.WM_SIZE:
@@ -261,8 +258,9 @@ func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) (uintptr) {
     	var ps w32.PAINTSTRUCT
 
     	hdc := w32.BeginPaint(hwnd, &ps)
-    	UpdateObjects(hwnd)
+    	UpdateStructures(hwnd)
     	PaintStructures(hdc)
+    	PaintMovables(hdc)
     default:
         return w32.DefWindowProc(hwnd, msg, wParam, lParam)
     }

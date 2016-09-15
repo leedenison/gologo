@@ -6,7 +6,8 @@ import "github.com/AllenDang/w32"
 import (
 	"C"
 	"fmt"
-	"github.com/leedenison/gologo/timer"
+	//"github.com/leedenison/gologo/gologowin"
+	"github.com/leedenison/gologo/w32ext"
 	"syscall"
 	"unsafe"
 )
@@ -79,10 +80,6 @@ var ball = circle{}
 // seems to be trying hard to be confusing
 var walls []structure
 
-func MakeIntResource(id uint16) *uint16 {
-	return (*uint16)(unsafe.Pointer(uintptr(id)))
-}
-
 func Clamp(value, min, max int32) int32 {
 	switch {
 	case value < min:
@@ -93,20 +90,16 @@ func Clamp(value, min, max int32) int32 {
 	return value
 }
 
-func RGB(r, g, b byte) uint32 {
-	return (uint32(r) | uint32(g)<<8 | uint32(b)<<16)
-}
-
 func CreateObjects() {
 	ball = circle{movableshape: movableshape{
 		shape: shape{
-			x: 240, y: 30, colour: RGB(0, 255, 0)},
+			x: 240, y: 30, colour: w32ext.RGB(0, 255, 0)},
 		vx: -35, vy: 50},
 		radius: 20, resistance: CIRCLE_RESISTANCE}
 
 	for i := 0; i < 4; i++ {
 		wall := structure{}
-		wall.colour = RGB(0, 0, 0)
+		wall.colour = w32ext.RGB(0, 0, 0)
 		walls = append(walls, wall)
 	}
 }
@@ -158,7 +151,7 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 		distanceSqrd := distanceX*distanceX + distanceY*distanceY
 		if distanceSqrd < ball.radius*ball.radius {
 			// hit a wall
-			timer.KillTimer(hwnd, uintptr(TIMER_ID))
+			w32ext.KillTimer(hwnd, uintptr(TIMER_ID))
 			fmt.Printf("Hit wall %v\n", i)
 		}
 	}
@@ -166,7 +159,7 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 	// Check if we've gone our right
 	winRect := w32.GetClientRect(hwnd)
 	if ball.y >= winRect.Right {
-		timer.KillTimer(hwnd, uintptr(TIMER_ID))
+		w32ext.KillTimer(hwnd, uintptr(TIMER_ID))
 		if ball.x < 0 {
 			fmt.Printf("Went over wall\n")
 		} else {
@@ -177,7 +170,7 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 	// Check if we've hit the left or bottom of the screen
 	if ball.y+ball.radius*2 <= 0 ||
 		ball.x >= winRect.Bottom {
-		timer.KillTimer(hwnd, uintptr(TIMER_ID))
+		w32ext.KillTimer(hwnd, uintptr(TIMER_ID))
 		fmt.Printf("Went out of play left or down\n")
 	}
 
@@ -296,10 +289,10 @@ func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16) w32.WNDCL
 	wcex.Instance = hInstance
 
 	// Use default IDI_APPLICATION icon.
-	wcex.Icon = w32.LoadIcon(hInstance, MakeIntResource(w32.IDI_APPLICATION))
+	wcex.Icon = w32.LoadIcon(hInstance, w32ext.MakeIntResource(w32.IDI_APPLICATION))
 
 	// Use default IDC_ARROW mouse cursor.
-	wcex.Cursor = w32.LoadCursor(0, MakeIntResource(w32.IDC_ARROW))
+	wcex.Cursor = w32.LoadCursor(0, w32ext.MakeIntResource(w32.IDC_ARROW))
 
 	// Assign HBRUSH to background using the standard window color
 	wcex.Background = w32.COLOR_WINDOW + 11
@@ -308,7 +301,7 @@ func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16) w32.WNDCL
 	wcex.MenuName = nil
 
 	wcex.ClassName = lpszClassName
-	wcex.IconSm = w32.LoadIcon(hInstance, MakeIntResource(w32.IDI_APPLICATION))
+	wcex.IconSm = w32.LoadIcon(hInstance, w32ext.MakeIntResource(w32.IDI_APPLICATION))
 
 	return wcex
 }
@@ -336,7 +329,7 @@ func WinMain() int {
 	w32.ShowWindow(hwnd, w32.SW_SHOWDEFAULT)
 	w32.UpdateWindow(hwnd)
 
-	timer.SetTimer(hwnd, uintptr(TIMER_ID), 100, syscall.NewCallback(Tick))
+	w32ext.SetTimer(hwnd, uintptr(TIMER_ID), 100, syscall.NewCallback(Tick))
 	var msg w32.MSG
 	for {
 		// 0, 0, 0 = retrive all messages from all sources

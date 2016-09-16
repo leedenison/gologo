@@ -200,11 +200,6 @@ func PaintMovables(wCtx *w32ext.WindowContext) {
 }
 
 func PaintStructures(wCtx *w32ext.WindowContext) {
-
-	if len(walls) == 0 {
-		return
-	}
-
 	for i := range walls {
 		// Draw wall
 		w32ext.DrawRectangle(

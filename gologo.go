@@ -134,7 +134,7 @@ func UpdateStructures(wCtx *w32ext.WindowContext) {
 }
 
 func Tick(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
-	wCtx.HDC = w32.GetDC(wCtx.Window)
+	w32ext.GetDeviceContext(wCtx)
 
 	// TODO: Need to mutex this so we don't enter twice
 	// Clear old ball

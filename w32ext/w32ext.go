@@ -66,6 +66,10 @@ func GetAppContext() AppContext {
     return AppContext{ App: w32.GetModuleHandle("") }
 }
 
+func GetDeviceContext(wCtx *WindowContext) {
+    wCtx.HDC = w32.GetDC(wCtx.Window)
+}
+
 func ShowWindow(wCtx WindowContext) {
 	w32.ShowWindow(wCtx.Window, w32.SW_SHOWDEFAULT)
 	w32.UpdateWindow(wCtx.Window)

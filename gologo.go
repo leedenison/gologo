@@ -9,6 +9,10 @@ import (
 	"github.com/leedenison/gologo/w32ext"
 )
 
+const GOLOGO_MAIN_WIN = "GOLOGO_MAIN"
+
+const SIXTY_HZ_IN_MILLIS = 16
+
 const GRAVITY_VALUE = 5
 const CIRCLE_RESISTANCE = 3
 const MAX_SPEED = 40
@@ -134,7 +138,7 @@ func UpdateStructures(wCtx *w32ext.WindowContext) {
 }
 
 func Tick(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
-	w32ext.GetDeviceContext(wCtx)
+	w32ext.GetDC(wCtx)
 
 	// TODO: Need to mutex this so we don't enter twice
 	// Clear old ball
@@ -215,6 +219,7 @@ func OnSize(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
 func OnPaint(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
 	PaintStructures(wCtx)
 	PaintMovables(wCtx)
+	w32ext.ReleaseContext(wCtx)
 }
 
 func main() {
@@ -225,10 +230,10 @@ func main() {
 
 	CreateObjects()
 
-	CreateWindowClass(&aCtx, "WNDclass")
-	wCtx := CreateWindowInstance(&aCtx, "WNDclass", "Simple Go Window!")
+	CreateWindowClass(&aCtx, GOLOGO_MAIN_WIN)
+	wCtx := CreateWindowInstance(&aCtx, GOLOGO_MAIN_WIN, "Simple Go Window!")
 
-	SetTimer(&wCtx, TIMER_ID, 100, Tick)
+	SetTimer(&wCtx, TIMER_ID, SIXTY_HZ_IN_MILLIS, Tick)
 
 	var msg w32.MSG
 	for {

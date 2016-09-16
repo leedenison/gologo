@@ -66,7 +66,7 @@ func GetAppContext() AppContext {
     return AppContext{ App: w32.GetModuleHandle("") }
 }
 
-func GetDeviceContext(wCtx *WindowContext) {
+func GetDC(wCtx *WindowContext) {
     wCtx.HDC = w32.GetDC(wCtx.Window)
 }
 
@@ -145,16 +145,12 @@ func DrawEllipse(wCtx *WindowContext, pen *Pen, l, t, r, b int32) {
 	SelectPen(wCtx, pen)
 
 	w32.Ellipse(wCtx.HDC, int(l), int(t), int(r), int(b))
-
-	ReleaseContext(wCtx)
 }
 
 func DrawRectangle(wCtx *WindowContext, pen *Pen, l, t, r, b int32) {
 	SelectPen(wCtx, pen)
 
 	w32.Rectangle(wCtx.HDC, int(l), int(t), int(r), int(b))
-
-	ReleaseContext(wCtx)
 }
 
 func ClearRect(wCtx *WindowContext, l, t, r, b int32) {

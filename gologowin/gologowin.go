@@ -2,9 +2,33 @@ package gologowin
 
 import "github.com/AllenDang/w32"
 import "github.com/leedenison/gologo/w32ext"
+import "syscall"
 import "unsafe"
 
-func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16, wndProc uintptr) w32.WNDCLASSEX {
+var EventHandlers = map[uint32]func(*w32ext.WindowContext) {}
+
+func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) uintptr {
+    wCtx := &w32ext.WindowContext { Window: hwnd }
+
+	switch msg {
+	case w32.WM_DESTROY:
+		// 0 = WM_QUIT
+		w32.PostQuitMessage(0)
+	case w32.WM_SIZE, w32.WM_PAINT:
+		// On initial paint
+		var ps w32.PAINTSTRUCT
+
+		hdc := w32.BeginPaint(hwnd, &ps)
+		wCtx.HDC = hdc
+		EventHandlers[msg](wCtx)
+		w32.EndPaint(hwnd, &ps)
+	default:
+		return w32.DefWindowProc(hwnd, msg, wParam, lParam)
+	}
+	return 0
+}
+
+func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16) w32.WNDCLASSEX {
 	var wcex w32.WNDCLASSEX
 
 	// Size of the window object.
@@ -12,7 +36,7 @@ func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16, wndProc u
 
 	wcex.Style = w32.CS_HREDRAW | w32.CS_VREDRAW
 	// Application loop handler procedure.
-	wcex.WndProc = wndProc
+	wcex.WndProc = syscall.NewCallback(WndProc)
 	// Additional bytes to allocate for the window class struct.
 	wcex.ClsExtra = 0
 	// Additional bytes to allocation for the window instance struct.

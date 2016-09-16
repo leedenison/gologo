@@ -113,9 +113,9 @@ func CreateObjects() {
 	}
 }
 
-func UpdateStructures(hwnd w32.HWND) {
+func UpdateStructures(wCtx *w32ext.WindowContext) {
 	// Get the pane size
-	winRect := w32.GetClientRect(hwnd)
+	winRect := w32ext.GetClientRect(wCtx)
 
 	// Do the left wall
 	walls[0].bottomx = winRect.Bottom
@@ -220,30 +220,19 @@ func PaintStructures(wCtx *w32ext.WindowContext) {
 	}
 }
 
-func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) uintptr {
-	switch msg {
-	case w32.WM_DESTROY:
-		// 0 = WM_QUIT
-		w32.PostQuitMessage(0)
-	case w32.WM_SIZE:
-		UpdateStructures(hwnd)
-		fallthrough
-	case w32.WM_PAINT:
-		// On initial paint
-		var ps w32.PAINTSTRUCT
+func OnSize(wCtx *w32ext.WindowContext) {
+	UpdateStructures(wCtx)
+	OnPaint(wCtx)
+}
 
-		hdc := w32.BeginPaint(hwnd, &ps)
-		wCtx := &w32ext.WindowContext { Window: hwnd, HDC: hdc }
-		PaintStructures(wCtx)
-		PaintMovables(wCtx)
-		w32.EndPaint(hwnd, &ps)
-	default:
-		return w32.DefWindowProc(hwnd, msg, wParam, lParam)
-	}
-	return 0
+func OnPaint(wCtx *w32ext.WindowContext) {
+	PaintStructures(wCtx)
+	PaintMovables(wCtx)
 }
 
 func WinMain() int {
+	gologowin.EventHandlers[w32.WM_SIZE] = OnSize
+	gologowin.EventHandlers[w32.WM_PAINT] = OnPaint
 
 	// Handle to application instance.
 	hInstance := w32.GetModuleHandle("")
@@ -251,7 +240,7 @@ func WinMain() int {
 	// Registered class name of the window.
 	lpszClassName := syscall.StringToUTF16Ptr("WNDclass")
 
-	wcex := gologowin.CreateWindowClass(hInstance, lpszClassName, syscall.NewCallback(WndProc))
+	wcex := gologowin.CreateWindowClass(hInstance, lpszClassName)
 
 	// Make this window available to other controls
 	w32.RegisterClassEx(&wcex)

@@ -51,6 +51,10 @@ type Pen struct {
 	Color uint32
 }
 
+func GetClientRect(wCtx *WindowContext) *w32.RECT {
+	return w32.GetClientRect(wCtx.Window)
+}
+
 func SelectPen(wCtx *WindowContext, pen *Pen) {
 	if wCtx.lBrushs == nil {
 		wCtx.lBrushs = make(map[Pen]*w32.LOGBRUSH)

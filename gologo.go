@@ -217,14 +217,19 @@ func OnPaint(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
 	PaintMovables(wCtx)
 }
 
-func WinMain() int {
+func main() {
 	aCtx := w32ext.GetAppContext()
 
-	CreateWindowClass(&aCtx, "WNDclass")
+	EventHandlers[w32.WM_SIZE] = OnSize
+	EventHandlers[w32.WM_PAINT] = OnPaint
 
+	CreateObjects()
+
+	CreateWindowClass(&aCtx, "WNDclass")
 	wCtx := CreateWindowInstance(&aCtx, "WNDclass", "Simple Go Window!")
 
 	SetTimer(&wCtx, TIMER_ID, 100, Tick)
+
 	var msg w32.MSG
 	for {
 		// 0, 0, 0 = retrive all messages from all sources
@@ -234,14 +239,6 @@ func WinMain() int {
 		w32.TranslateMessage(&msg)
 		w32.DispatchMessage(&msg)
 	}
-	return int(msg.WParam)
-}
 
-func main() {
-	EventHandlers[w32.WM_SIZE] = OnSize
-	EventHandlers[w32.WM_PAINT] = OnPaint
-
-	CreateObjects()
-	WinMain()
 	return
 }

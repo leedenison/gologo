@@ -1,14 +1,24 @@
-package gologowin
+package main
 
 import "github.com/AllenDang/w32"
 import "github.com/leedenison/gologo/w32ext"
 import "syscall"
 import "unsafe"
 
-var EventHandlers = map[uint32]func(*w32ext.WindowContext) {}
+var EventHandlers = map[uint32]func(*w32ext.WindowContext, *w32ext.Event) {}
+
+func TimerProc(hwnd w32.HWND, uMsg uint32, idEvent uintptr, dwTime uint16) uintptr {
+	wCtx := &w32ext.WindowContext { Window: hwnd }
+	ev := &w32ext.Event { Id: idEvent, Time: dwTime }
+
+	EventHandlers[w32.WM_TIMER](wCtx, ev)
+
+	return 0
+}
 
 func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) uintptr {
     wCtx := &w32ext.WindowContext { Window: hwnd }
+    ev := &w32ext.Event { WParam: wParam, LParam: lParam }
 
 	switch msg {
 	case w32.WM_DESTROY:
@@ -20,7 +30,7 @@ func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 
 		hdc := w32.BeginPaint(hwnd, &ps)
 		wCtx.HDC = hdc
-		EventHandlers[msg](wCtx)
+		EventHandlers[msg](wCtx, ev)
 		w32.EndPaint(hwnd, &ps)
 	default:
 		return w32.DefWindowProc(hwnd, msg, wParam, lParam)
@@ -28,8 +38,11 @@ func WndProc(hwnd w32.HWND, msg uint32, wParam, lParam uintptr) uintptr {
 	return 0
 }
 
-func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16) w32.WNDCLASSEX {
+func CreateWindowClass(aCtx *w32ext.AppContext, className string) w32.WNDCLASSEX {
 	var wcex w32.WNDCLASSEX
+
+	// Registered class name of the window.
+	lpszClassName := syscall.StringToUTF16Ptr(className)
 
 	// Size of the window object.
 	wcex.Size = uint32(unsafe.Sizeof(wcex))
@@ -45,10 +58,10 @@ func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16) w32.WNDCL
 	// member to DLGWINDOWEXTRA.
 	wcex.WndExtra = 0
 	// A handle to the instance that contains the window procedure for the class.
-	wcex.Instance = hInstance
+	wcex.Instance = aCtx.App
 
 	// Use default IDI_APPLICATION icon.
-	wcex.Icon = w32.LoadIcon(hInstance, w32ext.MakeIntResource(w32.IDI_APPLICATION))
+	wcex.Icon = w32.LoadIcon(aCtx.App, w32ext.MakeIntResource(w32.IDI_APPLICATION))
 
 	// Use default IDC_ARROW mouse cursor.
 	wcex.Cursor = w32.LoadCursor(0, w32ext.MakeIntResource(w32.IDC_ARROW))
@@ -60,7 +73,25 @@ func CreateWindowClass(hInstance w32.HINSTANCE, lpszClassName *uint16) w32.WNDCL
 	wcex.MenuName = nil
 
 	wcex.ClassName = lpszClassName
-	wcex.IconSm = w32.LoadIcon(hInstance, w32ext.MakeIntResource(w32.IDI_APPLICATION))
+	wcex.IconSm = w32.LoadIcon(aCtx.App, w32ext.MakeIntResource(w32.IDI_APPLICATION))
 
+	// Make this window available to other controls
+	w32.RegisterClassEx(&wcex)
+	
 	return wcex
+}
+
+func CreateWindowInstance(aCtx *w32ext.AppContext, className, title string) w32ext.WindowContext {
+	hwnd := w32.CreateWindowEx(0, syscall.StringToUTF16Ptr(className),
+		syscall.StringToUTF16Ptr(title),
+		w32.WS_OVERLAPPEDWINDOW|w32.WS_VISIBLE,
+		w32.CW_USEDEFAULT, w32.CW_USEDEFAULT, 400, 400, 0, 0,
+		aCtx.App, nil)
+
+	return w32ext.WindowContext{ Window: hwnd }
+}
+
+func SetTimer(wCtx *w32ext.WindowContext, nIDEvent uint32, uElapse uint32, timerCallback func(*w32ext.WindowContext, *w32ext.Event)) {
+	EventHandlers[w32.WM_TIMER] = timerCallback
+	w32ext.SetTimer(wCtx, nIDEvent, uElapse, syscall.NewCallback(TimerProc))
 }

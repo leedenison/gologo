@@ -11,20 +11,20 @@ var (
     procKillTimer = moduser32.NewProc("KillTimer")
 )
 
-func SetTimer(hwnd w32.HWND, nIDEvent uintptr, uElapse uint32, lpTimerProc uintptr) uintptr {
+func SetTimer(wCtx *WindowContext, nIDEvent uint32, uElapse uint32, lpTimerProc uintptr) uintptr {
 	ret, _, _ := procSetTimer.Call(
-		uintptr(hwnd),
-		nIDEvent,
+		uintptr(wCtx.Window),
+		uintptr(nIDEvent),
 		uintptr(uElapse),
 		lpTimerProc)
 
 	return ret
 }
 
-func KillTimer(wCtx *WindowContext, nIDEvent uintptr) bool {
+func KillTimer(wCtx *WindowContext, nIDEvent uint32) bool {
 	ret, _, _ := procKillTimer.Call(
 		uintptr(wCtx.Window),
-		nIDEvent)
+		uintptr(nIDEvent))
 
 	return ret != 0
 }
@@ -37,6 +37,10 @@ func RGB(r, g, b byte) uint32 {
 	return (uint32(r) | uint32(g)<<8 | uint32(b)<<16)
 }
 
+type AppContext struct {
+	App w32.HINSTANCE
+}
+
 type WindowContext struct {
 	Window w32.HWND
 	HDC w32.HDC
@@ -47,8 +51,24 @@ type WindowContext struct {
 	hPens map[Pen]*w32.HPEN
 }
 
+type Event struct {
+	Id uintptr
+	Time uint16
+	WParam uintptr
+	LParam uintptr
+}
+
 type Pen struct {
 	Color uint32
+}
+
+func GetAppContext() AppContext {
+    return AppContext{ App: w32.GetModuleHandle("") }
+}
+
+func ShowWindow(wCtx WindowContext) {
+	w32.ShowWindow(wCtx.Window, w32.SW_SHOWDEFAULT)
+	w32.UpdateWindow(wCtx.Window)
 }
 
 func GetClientRect(wCtx *WindowContext) *w32.RECT {

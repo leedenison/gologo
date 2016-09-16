@@ -6,9 +6,7 @@ import "github.com/AllenDang/w32"
 import (
 	"C"
 	"fmt"
-	"github.com/leedenison/gologo/gologowin"
 	"github.com/leedenison/gologo/w32ext"
-	"syscall"
 )
 
 const GRAVITY_VALUE = 5
@@ -135,10 +133,9 @@ func UpdateStructures(wCtx *w32ext.WindowContext) {
 	walls[3].bottomy = winRect.Right
 }
 
-func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
-	dwTime uint16) uintptr {
-	hdc := w32.GetDC(hwnd)
-	wCtx := &w32ext.WindowContext { Window: hwnd, HDC: hdc }
+func Tick(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
+	wCtx.HDC = w32.GetDC(wCtx.Window)
+
 	// TODO: Need to mutex this so we don't enter twice
 	// Clear old ball
 	w32ext.ClearRect(wCtx, ball.y, ball.x, 
@@ -160,7 +157,7 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 		distanceSqrd := distanceX*distanceX + distanceY*distanceY
 		if distanceSqrd < ball.radius*ball.radius {
 			// hit a wall
-			w32ext.KillTimer(wCtx, uintptr(TIMER_ID))
+			w32ext.KillTimer(wCtx, TIMER_ID)
 			fmt.Printf("Hit wall %v\n", i)
 		}
 	}
@@ -168,7 +165,7 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 	// Check if we've gone our right
 	winRect := w32ext.GetClientRect(wCtx)
 	if ball.y >= winRect.Right {
-		w32ext.KillTimer(wCtx, uintptr(TIMER_ID))
+		w32ext.KillTimer(wCtx, TIMER_ID)
 		if ball.x < 0 {
 			fmt.Printf("Went over wall\n")
 		} else {
@@ -178,14 +175,12 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 
 	// Check if we've hit the left or bottom of the screen
 	if ball.y+ball.radius*2 <= 0 || ball.x >= winRect.Bottom {
-		w32ext.KillTimer(wCtx, uintptr(TIMER_ID))
+		w32ext.KillTimer(wCtx, TIMER_ID)
 		fmt.Printf("Went out of play left or down\n")
 	}
 
 	PaintMovables(wCtx)
 	w32ext.ReleaseDC(wCtx)
-
-	return 0
 }
 
 func PaintMovables(wCtx *w32ext.WindowContext) {
@@ -212,42 +207,24 @@ func PaintStructures(wCtx *w32ext.WindowContext) {
 	}
 }
 
-func OnSize(wCtx *w32ext.WindowContext) {
+func OnSize(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
 	UpdateStructures(wCtx)
-	OnPaint(wCtx)
+	OnPaint(wCtx, ev)
 }
 
-func OnPaint(wCtx *w32ext.WindowContext) {
+func OnPaint(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
 	PaintStructures(wCtx)
 	PaintMovables(wCtx)
 }
 
 func WinMain() int {
-	gologowin.EventHandlers[w32.WM_SIZE] = OnSize
-	gologowin.EventHandlers[w32.WM_PAINT] = OnPaint
+	aCtx := w32ext.GetAppContext()
 
-	// Handle to application instance.
-	hInstance := w32.GetModuleHandle("")
+	CreateWindowClass(&aCtx, "WNDclass")
 
-	// Registered class name of the window.
-	lpszClassName := syscall.StringToUTF16Ptr("WNDclass")
+	wCtx := CreateWindowInstance(&aCtx, "WNDclass", "Simple Go Window!")
 
-	wcex := gologowin.CreateWindowClass(hInstance, lpszClassName)
-
-	// Make this window available to other controls
-	w32.RegisterClassEx(&wcex)
-
-	// Create an instance of this window class
-	hwnd := w32.CreateWindowEx(0, lpszClassName,
-		syscall.StringToUTF16Ptr("Simple Go Window!"),
-		w32.WS_OVERLAPPEDWINDOW|w32.WS_VISIBLE,
-		w32.CW_USEDEFAULT, w32.CW_USEDEFAULT, 400, 400, 0, 0,
-		hInstance, nil)
-
-	w32.ShowWindow(hwnd, w32.SW_SHOWDEFAULT)
-	w32.UpdateWindow(hwnd)
-
-	w32ext.SetTimer(hwnd, uintptr(TIMER_ID), 100, syscall.NewCallback(Tick))
+	SetTimer(&wCtx, TIMER_ID, 100, Tick)
 	var msg w32.MSG
 	for {
 		// 0, 0, 0 = retrive all messages from all sources
@@ -261,6 +238,9 @@ func WinMain() int {
 }
 
 func main() {
+	EventHandlers[w32.WM_SIZE] = OnSize
+	EventHandlers[w32.WM_PAINT] = OnPaint
+
 	CreateObjects()
 	WinMain()
 	return

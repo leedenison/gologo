@@ -185,6 +185,7 @@ func Tick(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
 
 	PaintMovables(wCtx)
 	w32ext.ReleaseDC(wCtx)
+	w32ext.ReleaseContext(wCtx)
 }
 
 func PaintMovables(wCtx *w32ext.WindowContext) {

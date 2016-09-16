@@ -137,13 +137,13 @@ func UpdateStructures(wCtx *w32ext.WindowContext) {
 
 func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 	dwTime uint16) uintptr {
+	hdc := w32.GetDC(hwnd)
+	wCtx := &w32ext.WindowContext { Window: hwnd, HDC: hdc }
 	// TODO: Need to mutex this so we don't enter twice
-	// Get ball rect
-	ballRect := w32.RECT{Left: ball.y, Top: ball.x,
-		Bottom: ball.x + ball.radius*2,
-		Right:  ball.y + ball.radius*2}
-	// Clear ball
-	w32.InvalidateRect(hwnd, &ballRect, true)
+	// Clear old ball
+	w32ext.ClearRect(wCtx, ball.y, ball.x, 
+		ball.y + ball.radius*2,
+		ball.x + ball.radius*2)
 
 	// Get balls new position
 	ball.ApplyGrav()
@@ -160,15 +160,15 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 		distanceSqrd := distanceX*distanceX + distanceY*distanceY
 		if distanceSqrd < ball.radius*ball.radius {
 			// hit a wall
-			w32ext.KillTimer(hwnd, uintptr(TIMER_ID))
+			w32ext.KillTimer(wCtx, uintptr(TIMER_ID))
 			fmt.Printf("Hit wall %v\n", i)
 		}
 	}
 
 	// Check if we've gone our right
-	winRect := w32.GetClientRect(hwnd)
+	winRect := w32ext.GetClientRect(wCtx)
 	if ball.y >= winRect.Right {
-		w32ext.KillTimer(hwnd, uintptr(TIMER_ID))
+		w32ext.KillTimer(wCtx, uintptr(TIMER_ID))
 		if ball.x < 0 {
 			fmt.Printf("Went over wall\n")
 		} else {
@@ -177,16 +177,13 @@ func Tick(hwnd w32.HWND, uMsg uint32, idEvent uintptr,
 	}
 
 	// Check if we've hit the left or bottom of the screen
-	if ball.y+ball.radius*2 <= 0 ||
-		ball.x >= winRect.Bottom {
-		w32ext.KillTimer(hwnd, uintptr(TIMER_ID))
+	if ball.y+ball.radius*2 <= 0 || ball.x >= winRect.Bottom {
+		w32ext.KillTimer(wCtx, uintptr(TIMER_ID))
 		fmt.Printf("Went out of play left or down\n")
 	}
 
-	hdc := w32.GetDC(hwnd)
-	wCtx := &w32ext.WindowContext { Window: hwnd, HDC: hdc }
 	PaintMovables(wCtx)
-	w32.ReleaseDC(hwnd, hdc)
+	w32ext.ReleaseDC(wCtx)
 
 	return 0
 }

@@ -21,9 +21,9 @@ func SetTimer(hwnd w32.HWND, nIDEvent uintptr, uElapse uint32, lpTimerProc uintp
 	return ret
 }
 
-func KillTimer(hwnd w32.HWND, nIDEvent uintptr) bool {
+func KillTimer(wCtx *WindowContext, nIDEvent uintptr) bool {
 	ret, _, _ := procKillTimer.Call(
-		uintptr(hwnd),
+		uintptr(wCtx.Window),
 		nIDEvent)
 
 	return ret != 0
@@ -117,20 +117,27 @@ func ReleaseContext(wCtx *WindowContext) {
 	}
 }
 
-func DrawEllipse(wCtx *WindowContext, pen *Pen, y int32, x int32, h int32, w int32) {
+func DrawEllipse(wCtx *WindowContext, pen *Pen, l, t, r, b int32) {
 	SelectPen(wCtx, pen)
 
-	// Draw ball
-	w32.Ellipse(wCtx.HDC, int(y), int(x), int(h), int(w))
+	w32.Ellipse(wCtx.HDC, int(l), int(t), int(r), int(b))
 
 	ReleaseContext(wCtx)
 }
 
-func DrawRectangle(wCtx *WindowContext, pen *Pen, y int32, x int32, by int32, bx int32) {
+func DrawRectangle(wCtx *WindowContext, pen *Pen, l, t, r, b int32) {
 	SelectPen(wCtx, pen)
 
-	// Draw ball
-	w32.Rectangle(wCtx.HDC, int(y), int(x), int(by), int(bx))
+	w32.Rectangle(wCtx.HDC, int(l), int(t), int(r), int(b))
 
 	ReleaseContext(wCtx)
+}
+
+func ClearRect(wCtx *WindowContext, l, t, r, b int32) {
+	rect := w32.RECT{Left: l, Top: t, Right: r, Bottom: b}
+	w32.InvalidateRect(wCtx.Window, &rect, true)
+}
+
+func ReleaseDC(wCtx *WindowContext) {
+	w32.ReleaseDC(wCtx.Window, wCtx.HDC)
 }

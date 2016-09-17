@@ -4,243 +4,312 @@ package main
 import "github.com/AllenDang/w32"
 
 import (
-	"C"
-	"fmt"
-	"math"
-	"github.com/leedenison/gologo/w32ext"
+    "C"
+    "fmt"
+    "math"
+    "reflect"
+    "github.com/leedenison/gologo/w32ext"
 )
 
 const GOLOGO_MAIN_WIN = "GOLOGO_MAIN"
 
 const SIXTY_HZ_IN_MILLIS = 16
 
-const GRAVITY = 5
-const RESISTANCE = 3
-const MAX_SPEED = 40
+const GRAVITY = 1
+const RESISTANCE = 0
+const MAX_SPEED = 10
 const TIMER_ID = 1
 const WALL_WIDTH = 10
 const GAP_WIDTH = 80
 
+const (
+    OBJECT_SOLID = iota
+    OBJECT_OUTLINE = iota
+    OBJECT_EMPTY = iota
+)
+
+const (
+    OVERLAP_FULL = iota
+    OVERLAP_PARTIAL = iota
+)
+
 type Vector struct {
-	x, y   int32
+    x, y   int32
 }
 
-type Moveable interface {
-	GetOrigin() Vector
-	SetOrigin(Vector)
-	GetResistance() int32
+type Object interface {
+    GetOrigin() Vector
+    SetOrigin(Vector)
+    GetResistance() int32
+    RenderObjType() int
+    CheckCollisionPolygon(*Polygon) *Collision
+    CheckCollisionCircle(*Circle) *Collision
 }
 
-type Rectangle struct {
-	topleft, bottomright Vector
+type Collision struct {
+    collisionType int
+    closestImpact Vector
+}
+
+// We currently assume all polygons are convex
+type Polygon struct {
+    vertices []Vector
+    origin Vector
+    resistance int32
+    renderObjType int
+    collisionObjType int
+}
+
+func (p *Polygon) GetOrigin() Vector {
+    return p.origin
+}
+
+func (p *Polygon) SetOrigin(v Vector) {
+    p.origin = v
+}
+
+func (p *Polygon) GetResistance() int32 {
+    return p.resistance
+}
+
+func (p *Polygon) RenderObjType() int {
+    return p.renderObjType
+}
+
+func (p *Polygon) CheckCollisionPolygon(target *Polygon) *Collision {
+    return nil
+}
+
+func (p *Polygon) CheckCollisionCircle(target *Circle) *Collision {
+    // TODO: If collisionObjType == OBJECT_SOLID check for fully inside
+    var closestImpact Vector
+    smallestDistance := math.Inf(1)
+
+    for idx, v1 := range p.vertices {
+    	idx2 := (idx + 1) % len(p.vertices)
+        v2 := p.vertices[idx2]
+
+        closestX := Clamp(target.center.x, v1.x, v2.x)
+        closestY := Clamp(target.center.y, v1.y, v2.y)
+        distanceX := target.center.x - closestX
+        distanceY := target.center.y - closestY
+
+        distanceSqrd := math.Pow(float64(distanceX), 2) + math.Pow(float64(distanceY), 2)
+        fmt.Printf("    Collision: Checking line (%v, %v)\n", v1, v2)
+        fmt.Printf("        Collision: closestX = %v, closestY = %v\n", closestX, closestY)
+        fmt.Printf("        Collision: distanceSqrd = %v, radiusSqrd = %v\n", distanceSqrd, math.Pow(float64(target.radius), 2))
+        if distanceSqrd < math.Pow(float64(target.radius), 2) {
+        	if math.IsInf(smallestDistance, 1) && distanceSqrd < smallestDistance {
+                closestImpact = Vector{ x: closestX, y: closestY }
+                fmt.Printf("        Collision: Recording closestX = %v, closestY = %v\n", closestX, closestY)
+                smallestDistance = distanceSqrd        		
+        	}
+        }
+    }
+
+    if !math.IsInf(smallestDistance, 1) {
+        return &Collision{ collisionType: OVERLAP_PARTIAL, closestImpact: closestImpact }        
+    } else {
+        return nil
+    }
 }
 
 type Circle struct {
-	radius, resistance int32
-	center Vector
+    radius, resistance int32
+    center Vector
+    renderObjType int
+    collisionObjType int
 }
 
 func (c *Circle) GetOrigin() Vector {
-	return c.center
+    return c.center
 }
 
 func (c *Circle) SetOrigin(v Vector) {
-	c.center = v
+    c.center = v
 }
 
 func (c *Circle) GetResistance() int32 {
-	return c.resistance
+    return c.resistance
 }
 
-var ball Circle
+func (c *Circle) RenderObjType() int {
+    return c.renderObjType
+}
 
-// TODO Don't know go conventions
-// - structures for the var name seems more sensible but then
-// seems to be trying hard to be confusing
-var walls []Rectangle
+func (c *Circle) CheckCollisionPolygon(target *Polygon) *Collision {
+    return target.CheckCollisionCircle(c)
+}
 
-var speeds = map[Moveable]Vector {}
+func (c *Circle) CheckCollisionCircle(target *Circle) *Collision {
+    return nil
+}
+
+var objects = []Object {}
+var speeds = map[int]Vector {}
 
 const PEN_BALL = 0
 const PEN_WALL = 1
 
 var pens = map[int]*w32ext.Pen { 
-	PEN_BALL: &w32ext.Pen{ Color: w32ext.RGB(0, 255, 0) },
-	PEN_WALL: &w32ext.Pen{ Color: w32ext.RGB(0, 0, 1) },
+    PEN_BALL: &w32ext.Pen{ Color: w32ext.RGB(0, 255, 0) },
+    PEN_WALL: &w32ext.Pen{ Color: w32ext.RGB(0, 0, 0) },
 }
 
 func CreateObjects() {
-	ball = Circle{
-		center: Vector{ x: 50, y: 260 },
-		radius: 20, 
-		resistance: RESISTANCE,
-	}
+    objects = append(objects, &Circle{
+        center: Vector{ x: 50, y: 260 },
+        radius: 20, 
+        resistance: RESISTANCE,
+        renderObjType: OBJECT_SOLID,
+    })
 
-	speeds[&ball] = Vector{ x: 50, y: -35 }
+    speeds[len(objects) - 1] = Vector{ x: 5, y: -5 }
 
-	for i := 0; i < 4; i++ {
-		walls = append(walls, Rectangle{})
-	}
-}
-
-func UpdateStructures(wCtx *w32ext.WindowContext) {
-	// Get the pane size
-	winRect := w32ext.GetClientRect(wCtx)
-
-	// Do the left wall
-	walls[0].bottomright.x = WALL_WIDTH
-	walls[0].bottomright.y = winRect.Bottom
-	// Floor
-	walls[1].topleft.y = winRect.Bottom - WALL_WIDTH
-	walls[1].bottomright.x = winRect.Right
-	walls[1].bottomright.y = winRect.Bottom
-	// Top right wall
-	walls[2].topleft.x = winRect.Right - WALL_WIDTH
-	walls[2].bottomright.x = winRect.Right
-	walls[2].bottomright.y = winRect.Bottom/2 - GAP_WIDTH/2
-	// Bottom right wall
-	walls[3].topleft.x = winRect.Right - WALL_WIDTH
-	walls[3].topleft.y = winRect.Bottom/2 + GAP_WIDTH/2
-	walls[3].bottomright.x = winRect.Right
-	walls[3].bottomright.y = winRect.Bottom
+    objects = append(objects, &Polygon{
+        origin: Vector{ x: 0, y: 0 },
+        vertices: []Vector{
+            Vector{ x: 0, y: 0 }, 
+            Vector{ x: 1024, y: 0 }, 
+            Vector{ x: 1024, y: 768 }, 
+            Vector{ x: 0, y: 768 }, 
+        },
+        resistance: RESISTANCE,
+        renderObjType: OBJECT_EMPTY,
+    })
 }
 
 func UpdateSpeedsAndPositions() {
-    for obj, speed := range speeds {
-       	speed.y += GRAVITY
-	 	if speed.y > MAX_SPEED {
-			speed.y = MAX_SPEED
-		}
+    for objIdx, speed := range speeds {
+        obj := objects[objIdx]
+        speed.y += GRAVITY
+        if speed.y > MAX_SPEED {
+            speed.y = MAX_SPEED
+        }
 
-		if speed.x > 0 {
-			speed.x -= obj.GetResistance()
-			if speed.x < 0 {
-				speed.x = 0
-			}
-		} else if speed.x < 0 {
-			speed.x += obj.GetResistance()
-			if speed.x > 0 {
-				speed.x = 0
-			}
-		}
+        if speed.x > 0 {
+            speed.x -= obj.GetResistance()
+            if speed.x < 0 {
+                speed.x = 0
+            }
+        } else if speed.x < 0 {
+            speed.x += obj.GetResistance()
+            if speed.x > 0 {
+                speed.x = 0
+            }
+        }
 
-		speeds[obj] = speed
+        speeds[objIdx] = speed
 
-		origin := obj.GetOrigin()
-		origin.x += speed.x
-		origin.y += speed.y
-		obj.SetOrigin(origin)
-	}
+        origin := obj.GetOrigin()
+        origin.x += speed.x
+        origin.y += speed.y
+        obj.SetOrigin(origin)
+    }
 }
 
 func Tick(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
-	w32ext.GetDC(wCtx)
+    // TODO: Need to mutex this so we don't enter twice
+    w32ext.GetDC(wCtx)
+    ClearMovables(wCtx)
+    UpdateSpeedsAndPositions()
+    UpdateCollisions(wCtx)
+    PaintMovables(wCtx)
+    w32ext.ReleaseDC(wCtx)
+    w32ext.ReleaseContext(wCtx)
+}
 
-	// TODO: Need to mutex this so we don't enter twice
-	// Clear old ball
-	w32ext.ClearRect(wCtx, 
-		ball.center.x - ball.radius,
-		ball.center.y - ball.radius, 
-		ball.center.x + ball.radius,
-		ball.center.y + ball.radius)
+func UpdateCollisions(wCtx *w32ext.WindowContext) {
+    for idx1, obj1 := range objects {
+        for idx2 := idx1 + 1; idx2 < len(objects); idx2++ {
+            fmt.Printf("Checking collisions - %v, %v\n", reflect.TypeOf(obj1), reflect.TypeOf(objects[idx2]))
+            switch t2 := objects[idx2].(type) {
+            case *Circle:
+                collision := obj1.CheckCollisionCircle(t2)
+                if collision != nil {
+                    // hit a wall
+                    w32ext.KillTimer(wCtx, TIMER_ID)
+                    fmt.Printf("Hit wall %v\n", collision.closestImpact)
+                }
+            case *Polygon:
+                collision := obj1.CheckCollisionPolygon(t2)
+                if collision != nil {
+                    // hit a wall
+                    w32ext.KillTimer(wCtx, TIMER_ID)
+                    fmt.Printf("Hit wall %v\n", collision.closestImpact)
+                }
+            }
+        }
+    }
+}
 
-	// Get balls new position
-	UpdateSpeedsAndPositions()
-
-	// Check for collisions with walls
-	for i := range walls {
-		closestX := Clamp(ball.center.x, walls[i].topleft.x, walls[i].bottomright.x)
-		closestY := Clamp(ball.center.y, walls[i].topleft.y, walls[i].bottomright.y)
-		distanceX := ball.center.x - closestX
-		distanceY := ball.center.y - closestY
-
-		distanceSqrd := math.Pow(float64(distanceX), 2) + math.Pow(float64(distanceY), 2)
-		if distanceSqrd < math.Pow(float64(ball.radius), 2) {
-			// hit a wall
-			w32ext.KillTimer(wCtx, TIMER_ID)
-			fmt.Printf("Hit wall %v\n", i)
-		}
-	}
-
-	// Check if we've gone out right
-	winRect := w32ext.GetClientRect(wCtx)
-	if ball.center.x - ball.radius >= winRect.Right {
-		w32ext.KillTimer(wCtx, TIMER_ID)
-		if ball.center.y < 0 {
-			fmt.Printf("Went over wall\n")
-		} else {
-			fmt.Printf("Win!\n")
-		}
-	}
-
-	// Check if we've hit the left or bottom of the screen
-	if ball.center.x+ball.radius <= 0 || ball.center.y >= winRect.Bottom {
-		w32ext.KillTimer(wCtx, TIMER_ID)
-		fmt.Printf("Went out of play left or down\n")
-	}
-
-	PaintMovables(wCtx)
-	w32ext.ReleaseDC(wCtx)
-	w32ext.ReleaseContext(wCtx)
+func ClearMovables(wCtx *w32ext.WindowContext) {
+    for _, obj := range objects {
+        if obj.RenderObjType() != OBJECT_EMPTY {
+            switch t := obj.(type) {
+            case *Circle:
+                w32ext.ClearRect(wCtx, 
+                    t.center.x - t.radius,
+                    t.center.y - t.radius, 
+                    t.center.x + t.radius,
+                    t.center.y + t.radius)
+            default:
+                _ = t
+            }
+        }
+    }
 }
 
 func PaintMovables(wCtx *w32ext.WindowContext) {
-	// Draw ball
-	w32ext.DrawEllipse(
-		wCtx,
-		pens[PEN_BALL], 
-		ball.center.x - ball.radius, 
-		ball.center.y - ball.radius, 
-		ball.center.x + ball.radius,
-		ball.center.y + ball.radius)
-}
-
-func PaintStructures(wCtx *w32ext.WindowContext) {
-	for i := range walls {
-		// Draw wall
-		w32ext.DrawRectangle(
-			wCtx,
-			pens[PEN_WALL],
-			walls[i].topleft.x,
-			walls[i].topleft.y,
-			walls[i].bottomright.x,
-			walls[i].bottomright.y)
-	}
+    for _, obj := range objects {
+        if obj.RenderObjType() != OBJECT_EMPTY {
+            switch t := obj.(type) {
+            case *Circle:
+                w32ext.DrawEllipse(
+                    wCtx,
+                    pens[PEN_BALL], 
+                    t.center.x - t.radius, 
+                    t.center.y - t.radius, 
+                    t.center.x + t.radius,
+                    t.center.y + t.radius)
+            default:
+                _ = t
+            }            
+        }
+    }
 }
 
 func OnSize(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
-	UpdateStructures(wCtx)
-	OnPaint(wCtx, ev)
+    OnPaint(wCtx, ev)
 }
 
 func OnPaint(wCtx *w32ext.WindowContext, ev *w32ext.Event) {
-	PaintStructures(wCtx)
-	PaintMovables(wCtx)
-	w32ext.ReleaseContext(wCtx)
+    PaintMovables(wCtx)
+    w32ext.ReleaseContext(wCtx)
 }
 
 func main() {
-	aCtx := w32ext.GetAppContext()
+    aCtx := w32ext.GetAppContext()
 
-	EventHandlers[w32.WM_SIZE] = OnSize
-	EventHandlers[w32.WM_PAINT] = OnPaint
+    EventHandlers[w32.WM_SIZE] = OnSize
+    EventHandlers[w32.WM_PAINT] = OnPaint
 
-	CreateObjects()
+    CreateObjects()
 
-	CreateWindowClass(&aCtx, GOLOGO_MAIN_WIN)
-	wCtx := CreateWindowInstance(&aCtx, GOLOGO_MAIN_WIN, "Simple Go Window!")
+    CreateWindowClass(&aCtx, GOLOGO_MAIN_WIN)
+    wCtx := CreateWindowInstance(&aCtx, GOLOGO_MAIN_WIN, "Simple Go Window!")
 
-	SetTimer(&wCtx, TIMER_ID, SIXTY_HZ_IN_MILLIS, Tick)
+    SetTimer(&wCtx, TIMER_ID, SIXTY_HZ_IN_MILLIS, Tick)
 
-	var msg w32.MSG
-	for {
-		// 0, 0, 0 = retrive all messages from all sources
-		if w32.GetMessage(&msg, 0, 0, 0) == 0 {
-			break
-		}
-		w32.TranslateMessage(&msg)
-		w32.DispatchMessage(&msg)
-	}
+    var msg w32.MSG
+    for {
+        // 0, 0, 0 = retrive all messages from all sources
+        if w32.GetMessage(&msg, 0, 0, 0) == 0 {
+            break
+        }
+        w32.TranslateMessage(&msg)
+        w32.DispatchMessage(&msg)
+    }
 
-	return
+    return
 }

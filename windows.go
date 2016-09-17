@@ -85,7 +85,7 @@ func CreateWindowInstance(aCtx *w32ext.AppContext, className, title string) w32e
 	hwnd := w32.CreateWindowEx(0, syscall.StringToUTF16Ptr(className),
 		syscall.StringToUTF16Ptr(title),
 		w32.WS_OVERLAPPEDWINDOW|w32.WS_VISIBLE,
-		w32.CW_USEDEFAULT, w32.CW_USEDEFAULT, 400, 400, 0, 0,
+		w32.CW_USEDEFAULT, w32.CW_USEDEFAULT, 1024, 768, 0, 0,
 		aCtx.App, nil)
 
 	return w32ext.WindowContext{ Window: hwnd }

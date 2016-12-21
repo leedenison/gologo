@@ -2,8 +2,8 @@ package gologo
 
 import "math"
 
-func Clamp(value, limit1, limit2 int32) int32 {
-    var min, max int32
+func Clamp(value, limit1, limit2 float64) float64 {
+    var min, max float64
     if limit1 > limit2 {
         min = limit2
         max = limit1

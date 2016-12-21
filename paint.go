@@ -89,10 +89,10 @@ func PaintMovables(hwnd w32.HWND, hdc w32.HDC) {
 
                 w32.Ellipse(
                     hdc,
-                    int(t.Center.x - t.Radius),
-                    int(t.Center.y - t.Radius),
-                    int(t.Center.x + t.Radius),
-                    int(t.Center.y + t.Radius))
+                    int(t.Centre.x - t.Radius),
+                    int(t.Centre.y - t.Radius),
+                    int(t.Centre.x + t.Radius),
+                    int(t.Centre.y + t.Radius))
             }
         default:
             _ = t

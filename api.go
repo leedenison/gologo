@@ -2,7 +2,7 @@ package gologo
 
 func CreateCircle(x, y int32) {
     objects[next_object_id] = &Circle{
-        Center: Vector{ x: x, y: y },
+        Centre: Vector{ x: x, y: y },
         Radius: 20,
         Renderer: renderers[RENDER_OBJ],
     }

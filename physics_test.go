@@ -5,7 +5,7 @@ import "testing"
 func TestCheckCollisionPolyCirc_None(t *testing.T) {
 	assert := (*Assert)(t)
 
-    collision := CheckCollisionPolyCirc(SQUARE_100_200, CIRCLE_0_0)
+    collision := CheckCollisionPolyCirc(SQUARE_150_150, CIRCLE_0_0)
 
     assert.That(collision).IsNil()
 }
@@ -13,7 +13,7 @@ func TestCheckCollisionPolyCirc_None(t *testing.T) {
 func TestCheckCollisionPolyCirc_PartialOverlap(t *testing.T) {
 	assert := (*Assert)(t)
     
-    collision := CheckCollisionPolyCirc(SQUARE_100_200, CIRCLE_150_210)
+    collision := CheckCollisionPolyCirc(SQUARE_150_150, CIRCLE_150_210)
 
     assert.That(collision).Equals(
 		&Collision {
@@ -25,7 +25,7 @@ func TestCheckCollisionPolyCirc_PartialOverlap(t *testing.T) {
 func TestCheckCollisionPolyCirc_FullOverlap(t *testing.T) {
 	assert := (*Assert)(t)
     
-    collision := CheckCollisionPolyCirc(SQUARE_100_200, CIRCLE_150_150)
+    collision := CheckCollisionPolyCirc(SQUARE_150_150, CIRCLE_150_150)
 
     assert.That(collision).Equals(
 		&Collision {
@@ -50,22 +50,19 @@ var CIRCLE_150_150 = &Circle{
     Radius: 20,
 }
 
-var SQUARE_100_200 = &Polygon{
-    Origin: Vector{ x: 100, y: 100 },
-    Vertices: []Vector{
-        Vector{ x: 100, y: 100 },
-        Vector{ x: 200, y: 100 },
-        Vector{ x: 200, y: 200 },
-        Vector{ x: 100, y: 200 },
-    },
+var SQUARE_100 = []Vector{
+    Vector{ x: -50, y: -50 },
+    Vector{ x: 50, y: -50 },
+    Vector{ x: 50, y: 50 },
+    Vector{ x: -50, y: 50 },
 }
 
-var SQUARE_300_400 = &Polygon{
-    Origin: Vector{ x: 300, y: 300 },
-    Vertices: []Vector{
-        Vector{ x: 300, y: 300 },
-        Vector{ x: 400, y: 300 },
-        Vector{ x: 400, y: 400 },
-        Vector{ x: 300, y: 400 },
-    },
+var SQUARE_150_150 = &Polygon{
+    Origin: Vector{ x: 150, y: 150 },
+    Vertices: SQUARE_100,
+}
+
+var SQUARE_350_350 = &Polygon{
+    Origin: Vector{ x: 350, y: 350 },
+    Vertices: SQUARE_100,
 }

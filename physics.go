@@ -58,6 +58,19 @@ func (p *Polygon) SetOrigin(v Vector) {
     p.Origin = v
 }
 
+func (p *Polygon) GetWorldVertices() []Vector {
+    result := []Vector {}
+
+    for _, v := range p.Vertices {
+        result = append(result, Vector{
+            x: v.x + p.Origin.x,
+            y: v.y + p.Origin.y,
+        })
+    }
+
+    return result
+}
+
 type Circle struct {
     Renderer *Renderer
     Radius float64
@@ -75,9 +88,10 @@ func (c *Circle) SetOrigin(v Vector) {
 //TODO set closest impact in return
 func CheckCollisionPolyCirc(poly *Polygon, circ *Circle) *Collision {
     isRight := true
+    polyVertices := poly.GetWorldVertices()
 
-    for idx, v1 := range poly.Vertices {
-        idx2 := (idx + 1) % len(poly.Vertices)
+    for idx, v1 := range polyVertices {
+        idx2 := (idx + 1) % len(polyVertices)
         v2 := poly.Vertices[idx2]
 
         // Check proximity to first vertex
@@ -132,22 +146,25 @@ func CheckCollisionPolyCirc(poly *Polygon, circ *Circle) *Collision {
 
 // TODO: Calulate if partial or full overlap and closest impact
 func CheckCollisionPolyPoly(polyA *Polygon, polyB *Polygon) *Collision {
-    for _, polygon := range []Polygon{ *polyA, *polyB } {
-        for idx, v1 := range polygon.Vertices {
-            idx2 := (idx + 1) % len(polygon.Vertices)
-            v2 := polygon.Vertices[idx2]
+    polyAVertices := polyA.GetWorldVertices()
+    polyBVertices := polyB.GetWorldVertices()
+
+    for _, polyVertices := range [][]Vector{ polyAVertices, polyBVertices } {
+        for idx, v1 := range polyVertices {
+            idx2 := (idx + 1) % len(polyVertices)
+            v2 := polyVertices[idx2]
             
             normal := Vector{v2.y - v1.y, v1.x - v2.x}
 
             var minA, maxA float64
-            for _, p := range polyA.Vertices {
+            for _, p := range polyAVertices {
                 projected := normal.x * p.x + normal.y * p.y;
                 if minA == 0 || projected < minA { minA = projected }
                 if maxA == 0 || projected > maxA { maxA = projected }
             }
 
             var minB, maxB float64
-            for _, p := range polyB.Vertices {
+            for _, p := range polyBVertices {
                 projected := normal.x * p.x + normal.y * p.y;
                 if minB == 0 || projected < minB { minB = projected }
                 if maxB == 0 || projected > maxB { maxB = projected }

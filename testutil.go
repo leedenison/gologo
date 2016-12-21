@@ -1,6 +1,7 @@
 package gologo
 
 import "fmt"
+import "reflect"
 import "testing"
 
 type Assert testing.T
@@ -15,22 +16,22 @@ func (a *Assert) That(subject interface{}) *TestSubject {
 }
 
 func (ts *TestSubject) Equals(object interface{}) {
-	if object == nil {
+	if reflect.ValueOf(object).IsNil() {
 		ts.assert.Error("Assert.That.Equals used with <nil>, use Assert.That.IsNil instead.")
 	}
 
-	if ts.subject != nil {
+	if !reflect.ValueOf(ts.subject).IsNil() {
 		if ts.subject != object {
-			ts.assert.Error(fmt.Sprintf("Expected: %v, Found: %v", object, ts.subject))
+			ts.assert.Error(fmt.Sprintf("Expected: %T(%v), Found: %T(%v)", object, object, ts.subject, ts.subject))
 		}		
 	} else {
-		ts.assert.Error(fmt.Sprintf("Expected: %v, Found: <nil>", object))
+		ts.assert.Error(fmt.Sprintf("Expected: %T(%v), Found: <nil>", object, object))
 	}
 
 }
 
 func (ts *TestSubject) IsNil() {
-	if ts.subject != nil {
-		ts.assert.Error(fmt.Sprintf("Expected: <nil>, Found: %v", ts.subject))
+	if !reflect.ValueOf(ts.subject).IsNil() {
+		ts.assert.Error(fmt.Sprintf("Expected: <nil>, Found: %T(%v)", ts.subject, ts.subject))
 	}
 }

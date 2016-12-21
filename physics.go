@@ -6,7 +6,7 @@ import (
     "github.com/AllenDang/w32"
 )
 
-const GRAVITY = 0
+const GRAVITY = 1
 const RESISTANCE = 0
 const MAX_SPEED = 10
 const WALL_WIDTH = 10
@@ -30,7 +30,7 @@ var objects = map[int]Object {}
 var movables = map[int]Vector {}
 
 type Vector struct {
-    x, y   int32
+    x, y   float64
 }
 
 type Object interface {
@@ -60,7 +60,7 @@ func (p *Polygon) SetOrigin(v Vector) {
 
 type Circle struct {
     Renderer *Renderer
-    Radius int32
+    Radius float64
     Centre Vector
 }
 
@@ -82,9 +82,9 @@ func CheckCollisionPolyCirc(poly *Polygon, circ *Circle) *Collision {
 
         // Check proximity to first vertex
         v1CircDist := Vector {x: v1.x - circ.Centre.x, y: v1.y - circ.Centre.y}
-        objDistSq := math.Pow(float64(v1CircDist.x), 2) + 
-                 math.Pow(float64(v1CircDist.y), 2)
-        radiusSq := math.Pow(float64(circ.Radius), 2)
+        objDistSq := math.Pow(v1CircDist.x, 2) + 
+                 math.Pow(v1CircDist.y, 2)
+        radiusSq := math.Pow(circ.Radius, 2)
 
         if objDistSq < radiusSq {
             // collision - the vertex is too close
@@ -97,15 +97,15 @@ func CheckCollisionPolyCirc(poly *Polygon, circ *Circle) *Collision {
 
         // Check proximity to edge
         v1v2Dist := Vector {x: v1.x - v2.x, y: v1.y - v2.y}
-        edgeLengthSq := math.Pow(float64(v1v2Dist.x), 2) + 
-                     math.Pow(float64(v1v2Dist.y), 2)
+        edgeLengthSq := math.Pow(v1v2Dist.x, 2) + 
+                     math.Pow(v1v2Dist.y, 2)
         dot := v1CircDist.x * v1v2Dist.x + v1CircDist.y * v1v2Dist.y
-        normDist := Clamp(float64(dot) / edgeLengthSq, 0, 1) // Clamp as may be off edge end
+        normDist := Clamp(dot / edgeLengthSq, 0, 1) // Clamp as may be off edge end
 
-        projectionX := float64(v1.x) + normDist * float64(v1v2Dist.x)
-        projectionY := float64(v1.y) + normDist * float64(v1v2Dist.y)
-        projDistSq := math.Pow(float64(v1.x) - projectionX, 2) +
-                     math.Pow(float64(v1.y) - projectionY, 2)
+        projectionX := v1.x + normDist * v1v2Dist.x
+        projectionY := v1.y + normDist * v1v2Dist.y
+        projDistSq := math.Pow(v1.x - projectionX, 2) +
+                     math.Pow(v1.y - projectionY, 2)
 
         if projDistSq < radiusSq {
             return &Collision{
@@ -139,14 +139,14 @@ func CheckCollisionPolyPoly(polyA *Polygon, polyB *Polygon) *Collision {
             
             normal := Vector{v2.y - v1.y, v1.x - v2.x}
 
-            var minA, maxA int32
+            var minA, maxA float64
             for _, p := range polyA.Vertices {
                 projected := normal.x * p.x + normal.y * p.y;
                 if minA == 0 || projected < minA { minA = projected }
                 if maxA == 0 || projected > maxA { maxA = projected }
             }
 
-            var minB, maxB int32
+            var minB, maxB float64
             for _, p := range polyB.Vertices {
                 projected := normal.x * p.x + normal.y * p.y;
                 if minB == 0 || projected < minB { minB = projected }
@@ -166,8 +166,8 @@ func CheckCollisionPolyPoly(polyA *Polygon, polyB *Polygon) *Collision {
 func CheckCollisionCircCirc(circA *Circle, circB *Circle) *Collision {
         distX := circA.Centre.x - circB.Centre.x
         distY := circA.Centre.y - circB.Centre.y
-        distSq := math.Pow(float64(distX), 2) + math.Pow(float64(distY), 2)
-        radiusSq := math.Pow(float64(circA.Radius + circB.Radius), 2)
+        distSq := math.Pow(distX, 2) + math.Pow(distY, 2)
+        radiusSq := math.Pow(circA.Radius + circB.Radius, 2)
 
         if distSq <= radiusSq {
             var closestImpact Vector
@@ -184,8 +184,8 @@ func CheckCollisionCircCirc(circA *Circle, circB *Circle) *Collision {
                 closestImpact.y = circA.Centre.y + distY / 2
             }
 
-            halfRadiusASq := math.Pow(float64(circA.Radius) / 2, 2)
-            halfRadiusBSq := math.Pow(float64(circB.Radius) / 2, 2)
+            halfRadiusASq := math.Pow(circA.Radius / 2, 2)
+            halfRadiusBSq := math.Pow(circB.Radius / 2, 2)
             if distSq < halfRadiusASq ||
                distSq < halfRadiusBSq {
                 return &Collision{
@@ -253,9 +253,9 @@ func UpdateWindowEdge(hwnd w32.HWND) {
         Origin: Vector{ x: 0, y: 0 },
         Vertices: []Vector{
             Vector{ x: 0, y: 0 },
-            Vector{ x: clientRect.Right, y: 0 },
-            Vector{ x: clientRect.Right, y: clientRect.Bottom },
-            Vector{ x: 0, y: clientRect.Bottom },
+            Vector{ x: float64(clientRect.Right), y: 0 },
+            Vector{ x: float64(clientRect.Right), y: float64(clientRect.Bottom) },
+            Vector{ x: 0, y: float64(clientRect.Bottom) },
         },
         Renderer: renderers[RENDER_BG],
     }

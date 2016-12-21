@@ -1,9 +1,11 @@
 package gologo
 
-import "github.com/AllenDang/w32"
-import "github.com/leedenison/gologo/w32ext"
-import "syscall"
-import "unsafe"
+import (
+    "github.com/AllenDang/w32"
+    "github.com/leedenison/gologo/w32ext"
+    "syscall"
+    "unsafe"
+)
 
 const SIXTY_HZ_IN_MILLIS = 16
 
@@ -12,7 +14,7 @@ const GOLOGO_MAIN_WIN = "GOLOGO_MAIN"
 const WIN_SIZE_X = 1024
 const WIN_SIZE_Y = 768
 
-const TIMER_ID = 1
+const TIMER_ID = iota
 
 var EventHandlers = map[uint32]func(w32.HWND, *w32ext.Event) {}
 
@@ -104,7 +106,7 @@ func CreateWindowInstance(
         app w32.HINSTANCE,
         className string,
         title string) w32.HWND {
-    hwnd := w32.CreateWindowEx(0, syscall.StringToUTF16Ptr(className),
+        hwnd := w32.CreateWindowEx(0, syscall.StringToUTF16Ptr(className),
         syscall.StringToUTF16Ptr(title),
         w32.WS_OVERLAPPEDWINDOW|w32.WS_VISIBLE,
         w32.CW_USEDEFAULT, w32.CW_USEDEFAULT, WIN_SIZE_X, WIN_SIZE_Y, 0, 0,
@@ -135,10 +137,7 @@ func Run(title string) {
     EventHandlers[w32.WM_PAINT] = OnPaint
 
     CreateWindowClass(app, GOLOGO_MAIN_WIN)
-    hwnd := CreateWindowInstance(
-            app,
-            GOLOGO_MAIN_WIN,
-            title)
+    hwnd := CreateWindowInstance(app, GOLOGO_MAIN_WIN, title)
     CreateBuffer(hwnd)
     CreateRenderers(hwnd)
     UpdateWindowEdge(hwnd)

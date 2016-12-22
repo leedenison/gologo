@@ -39,3 +39,15 @@ func LineGradientIntercept(a Vector, b Vector) (float64, float64) {
         return gradient, float64(a.y) - gradient * float64(a.x)
     }
 }
+
+func UnitDirectionVector(from Vector, to Vector) Vector {
+    dirVector := Vector { to.x - from.x, to.y - from.y }
+    magnitude := math.Sqrt(math.Pow(dirVector.x, 2) + math.Pow(dirVector.y, 2))
+    dirVector.x = dirVector.x / magnitude
+    dirVector.y = dirVector.y / magnitude
+    return dirVector
+}
+
+func DotProduct(a Vector, b Vector) float64 {
+    return a.x * b.x + a.y * b.y
+}

@@ -8,6 +8,7 @@ import (
 )
 
 const SIXTY_HZ_IN_MILLIS = 16
+const PHYSICS_MULTIPLIER = 2
 
 const GOLOGO_MAIN_WIN = "GOLOGO_MAIN"
 
@@ -15,6 +16,8 @@ const WIN_SIZE_X = 1024
 const WIN_SIZE_Y = 768
 
 const TIMER_ID = iota
+
+var tickCount = 0
 
 var EventHandlers = map[uint32]func(w32.HWND, *w32ext.Event) {}
 
@@ -127,7 +130,10 @@ func SetTimer(
 func WindowsTick(hwnd w32.HWND, ev *w32ext.Event) {
     // TODO: Need to mutex this so we don't enter twice
     PhysicsTick(hwnd)
-    PaintTick(hwnd, ev)
+    if tickCount % PHYSICS_MULTIPLIER == 0 {
+        PaintTick(hwnd, ev)        
+    }
+    tickCount++
 }
 
 func Run(title string) {
@@ -141,7 +147,7 @@ func Run(title string) {
     CreateBuffer(hwnd)
     CreateRenderers(hwnd)
     UpdateWindowEdge(hwnd)
-    SetTimer(hwnd, TIMER_ID, SIXTY_HZ_IN_MILLIS, WindowsTick)
+    SetTimer(hwnd, TIMER_ID, SIXTY_HZ_IN_MILLIS / PHYSICS_MULTIPLIER, WindowsTick)
 
     var msg w32.MSG
     for {

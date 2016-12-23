@@ -21,6 +21,9 @@ import "C"
 const RENDER_BG = 0
 const RENDER_OBJ = 1
 
+
+var windowHeight = int32(0)
+
 var buffer = Buffer{}
 
 var renderers = map[int]*Renderer {
@@ -54,6 +57,8 @@ type Renderer struct {
 }
 
 func OnSize(hwnd w32.HWND, ev *w32ext.Event) {
+    clientRect := w32.GetClientRect(hwnd)
+    windowHeight = clientRect.Bottom
     UpdateWindowEdge(hwnd)
     OnPaint(hwnd, ev)
 }
@@ -61,7 +66,7 @@ func OnSize(hwnd w32.HWND, ev *w32ext.Event) {
 func OnPaint(hwnd w32.HWND, ev *w32ext.Event) {
     if buffer.HDC != 0 {
         ClearBuffer(hwnd, buffer.HDC, renderers[RENDER_BG])
-        PaintMovables(hwnd, buffer.HDC)
+        PaintObjects(hwnd, buffer.HDC)
         SwapBuffer(hwnd, buffer.HDC)
     }
 }
@@ -70,7 +75,7 @@ func PaintTick(hwnd w32.HWND, ev *w32ext.Event) {
     OnPaint(hwnd, ev)
 }
 
-func PaintMovables(hwnd w32.HWND, hdc w32.HDC) {
+func PaintObjects(hwnd w32.HWND, hdc w32.HDC) {
     var prevRenderer *Renderer
     var prevPen w32.HPEN
     var prevBrush w32.HBRUSH
@@ -90,9 +95,9 @@ func PaintMovables(hwnd w32.HWND, hdc w32.HDC) {
                 w32.Ellipse(
                     hdc,
                     int(t.Centre.x - t.Radius),
-                    int(t.Centre.y - t.Radius),
+                    int(windowHeight - int32(t.Centre.y - t.Radius)),
                     int(t.Centre.x + t.Radius),
-                    int(t.Centre.y + t.Radius))
+                    int(windowHeight - int32(t.Centre.y + t.Radius)))
             }
         default:
             _ = t

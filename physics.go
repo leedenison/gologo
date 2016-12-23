@@ -6,7 +6,9 @@ import (
     "github.com/AllenDang/w32"
 )
 
-const GRAVITY = 0.5
+const PHYSICS_MULT = 2
+const SPEED_MULT = PHYSICS_MULT * 10
+
 const RESISTANCE = 0
 const MAX_SPEED = 10
 const WALL_WIDTH = 10
@@ -28,9 +30,11 @@ const WINDOW_BORDER_LEFT = 1
 const WINDOW_BORDER_BOTTOM = 2
 const WINDOW_BORDER_RIGHT = 3
 
-var next_object_id = 4
+var nextObjectId = 4
 var objects = map[int]Object {}
 var movables = map[int]Vector {}
+
+var gravity = Vector { 0, 0 }
 
 type Vector struct {
     x, y   float64
@@ -282,10 +286,27 @@ func CheckCollisionCircCirc(circA *Circle, circB *Circle) *Collision {
         return nil
 }
 
+func HandleCollisionCircCirc(c1 *Circle, c2 *Circle, collision *Collision) {
+    for _, circ := range []*Circle{ c1, c2 } {    
+        if velocity, ok := movables[circ.Id]; ok {
+            // Calculate unit direction vector closestImpact -> centre
+            dirVector := UnitDirectionVector(circ.Centre, collision.closestImpact)
+            dot := DotProduct(velocity, dirVector)
+
+            // Reflect the circle velocity around the direction vector
+            velocity.x = velocity.x - 2 * dot * dirVector.x
+            velocity.y = velocity.y - 2 * dot * dirVector.y
+
+            movables[circ.Id] = velocity
+        }
+    }
+}
+
 func UpdateSpeedsAndPositions() {
     for objIdx, speed := range movables {
         obj := objects[objIdx]
-        speed.y += GRAVITY
+        speed.x += gravity.x
+        speed.y += gravity.y
 
         movables[objIdx] = speed
 
@@ -306,6 +327,11 @@ func UpdateCollisions() {
                     collision := CheckCollisionPolyCirc(t2, t1)
                     if collision != nil {
                         HandleCollisionPolyCirc(t2, t1, collision)
+                    }
+                case *Circle:
+                    collision := CheckCollisionCircCirc(t1, t2)
+                    if collision != nil {
+                        HandleCollisionCircCirc(t1, t2, collision)
                     }
                 }
             case *Polygon:

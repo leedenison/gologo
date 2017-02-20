@@ -47,7 +47,8 @@ type Object interface {
 
 type Collision struct {
     collisionType int
-    closestImpact Vector
+    impactObj1 Vector
+    impactObj2 Vector
 }
 
 // We currently assume all polygons are convex
@@ -94,101 +95,75 @@ func (c *Circle) SetOrigin(v Vector) {
     c.Centre = v
 }
 
-//TODO set closest impact in return
+// TODO: Find the closest collision instead of the first, ie. we could be overlapping two 
+//       edges or a corner.  We should calculate the nearer of the edges to bounce off of.
+// 
+// TODO: Collisions should return three impact points - the point of impact on each shape
+//       and the point in world coordinates of the impact.  The intention is that the 
+//       points of impact on each shape will be translated to the world co-ordinates point
+//       and the rebound is calculated assuming that was the location of the impact.
 func CheckCollisionPolyCirc(poly *Polygon, circ *Circle) *Collision {
     //fmt.Printf("Checking collision between:\n\tPolygon: %v\n\tCircle: %v\n", *poly, *circ)
     isRight := true
-    polyVertices := poly.GetWorldVertices()
+    vertices := poly.GetWorldVertices()
 
-    //fmt.Printf("Looping over edges:\n")
-    for idx, v1 := range polyVertices {
-        idx2 := (idx + 1) % len(polyVertices)
-        v2 := polyVertices[idx2]
-        //fmt.Printf("\tTesting edge v1: %v, v2: %v\n", v1, v2)
+    for idx, v1 := range vertices {
+        idx2 := (idx + 1) % len(vertices)
+        v2 := vertices[idx2]
 
-        // leedenison: This looks like it is the vector from the circle to the
-        // start point but I think it should be the vector from the start point
-        // to the circle
-        // Check proximity to first vertex
-        //v1CircDist := Vector {x: v1.x - circ.Centre.x, y: v1.y - circ.Centre.y}
-        v1CircDist := Vector {x: circ.Centre.x - v1.x, y: circ.Centre.y - v1.y}        
-        //fmt.Printf("\t\tv1CircDirVec: %v\n", v1CircDist)
+        // Calculate direction vectors for v1 -> c and v1 -> v2, then
+        // calculate the dot product
+        v3 := DirectionVector(v1, circ.Centre)
+        v4 := DirectionVector(v1, v2)
+        dot1 := DotProduct(v3, v4)
+
+        // Calculate the square magnitude of the radius and
+        // the v1 -> v2 direction vector
         radiusSq := math.Pow(circ.Radius, 2)
-        //fmt.Printf("\t\tcirc.Radius ^ 2: %v\n", radiusSq)
+        magSq := math.Pow(v4.x, 2) + math.Pow(v4.y, 2)
 
-        // Not sure why we need this independent check since the check below
-        // is clamped to the length of the line
-        /*
-        objDistSq := math.Pow(v1CircDist.x, 2) + math.Pow(v1CircDist.y, 2)
-        if objDistSq < radiusSq {
-            // collision - the vertex is too close
-            // (also catches v1 == v2)
-            return &Collision{
-                collisionType: OVERLAP_PARTIAL,
-                closestImpact: Vector{ x: 0, y: 0 },
-            }            
+        // Calculate the distance of the projection of the centre of the
+        // circle onto the v1 -> v2 direction vector in units of the 
+        // magnitude of the v1 -> v2 direction vector.
+        // Clamp the result to limit to the length of the v1 -> v2 direction
+        // vector
+        projDist := Clamp(dot1 / magSq, 0, 1)
+
+        // Calculate the position of the point on the v1 -> v2 direction
+        // vector closes to the projection of the centre of the circle.
+        projection := Vector {
+            v1.x + projDist * v4.x,
+            v1.y + projDist * v4.y,
         }
-        */
 
-        // leedenison: This also looks reversed to me.
-        // Check proximity to edge
-        // v1v2Dist := Vector {x: v1.x - v2.x, y: v1.y - v2.y}
-        v1v2Dist := Vector {x: v2.x - v1.x, y: v2.y - v1.y}
-
-        //fmt.Printf("\t\tv1v2Vec: %v\n", v1v2Dist)
-        edgeLengthSq := math.Pow(v1v2Dist.x, 2) + math.Pow(v1v2Dist.y, 2)
-        //fmt.Printf("\t\t|v1v2Vec| ^ 2: %v\n", edgeLengthSq)
-
-        dot := v1CircDist.x * v1v2Dist.x + v1CircDist.y * v1v2Dist.y
-        //fmt.Printf("\t\tv1CircVec.v1v2Vec: %v\n", dot)
-        normDist := Clamp(dot / edgeLengthSq, 0, 1) // Clamp as may be off edge end
-        //fmt.Printf("\t\tDistance to nearest approach along edge (from v1): %v\n", normDist)        
-
-        projectionX := v1.x + normDist * v1v2Dist.x
-        projectionY := v1.y + normDist * v1v2Dist.y
-        //fmt.Printf("\t\tnearApproachVec: %v, %v\n", projectionX, projectionY)        
-
-        // leedenison: This seems to be the distance to the first vertex of the
-        // polygon which seems wrong, I think it should be to the center of the circle
-        //projDistSq := math.Pow(v1.x - projectionX, 2) +
-        //             math.Pow(v1.y - projectionY, 2)
-        projDistSq := math.Pow(circ.Centre.x - projectionX, 2) +
-                     math.Pow(circ.Centre.y - projectionY, 2)
-        //fmt.Printf("\t\t|nearApproachVec| ^ 2: %v\n", projDistSq)
-
-        // We return the first collision we find, we may want to find the closest
-        // collision in future
-        //fmt.Printf("\t\tTest if |nearApproachVec| ^ 2 < circ.Radius ^ 2: %v\n", projDistSq < radiusSq)        
-        if projDistSq < radiusSq {
-            // fmt.Printf("Collision found returning: %v\n", Collision{
-            //     collisionType: OVERLAP_PARTIAL,
-            //     closestImpact: Vector{ x: projectionX, y: projectionY },
-            // })
+        v5 := DirectionVector(circ.Centre, projection)
+        magSqProj := math.Pow(v5.x, 2) + math.Pow(v5.y, 2)
+    
+        if magSqProj < radiusSq {
+            v6 := UnitVector(v5)
             return &Collision{
                 collisionType: OVERLAP_PARTIAL,
-                closestImpact: Vector{ x: projectionX, y: projectionY },
+                impactObj1: projection,
+                impactObj2: Vector { 
+                    x: circ.Centre.x + v6.x * circ.Radius,
+                    y: circ.Centre.y + v6.y * circ.Radius,
+                },
             }                        
         }
 
-        //fmt.Printf("\t\tIs circle on the right of the edge: %v\n", (v1v2Dist.x * v1CircDist.y - v1v2Dist.y * v1CircDist.x) < 0)
         // Not had collision so record if it's on our right
-        if (v1v2Dist.x * v1CircDist.y - v1v2Dist.y * v1CircDist.x) < 0 {
+        if (v4.x * v3.y - v4.y * v3.x) < 0 {
             isRight = false
         }
-        //fmt.Printf("\t\tNo collision found, next edge.\n")
     }
 
     if isRight == true {
-        // fmt.Printf("No more edges, but circle is on the right of all edges, so return: %v\n", Collision{
-        //     collisionType: OVERLAP_FULL,
-        //     closestImpact: Vector{ x: 0, y: 0 },
-        // })
         return &Collision{
             collisionType: OVERLAP_FULL,
-            closestImpact: Vector{ x: 0, y: 0 },
+            impactObj1: Vector{ x: 0, y: 0 },
+            impactObj2: Vector{ x: 0, y: 0 },
         }
     } else {
-        //fmt.Printf("No collision found, returning <nil>\n")
         return nil
     }
 }
@@ -198,27 +173,54 @@ func HandleCollisionPolyCirc(poly *Polygon, circ *Circle, collision *Collision) 
     // and is stationary (ie. does not add energy to the circle).
 
     if velocity, ok := movables[circ.Id]; ok {
-        // Calculate unit direction vector closestImpact -> centre
-        dirVector := UnitDirectionVector(circ.Centre, collision.closestImpact)
-        dot := DotProduct(velocity, dirVector)
+        initialVelocity := Vector {
+            x: velocity.x - gravity.x,
+            y: velocity.y - gravity.y,
+        }
+        
+        initialPosition := Vector {
+            x: circ.Centre.x - (initialVelocity.x + (gravity.x / 2)),
+            y: circ.Centre.y - (initialVelocity.y + (gravity.y / 2)),
+        }
 
-        // Reflect the circle velocity around the direction vector
-        velocity.x = velocity.x - 2 * dot * dirVector.x
-        velocity.y = velocity.y - 2 * dot * dirVector.y
+        // First translate the circle to the point of impact
+        translate := DirectionVector(collision.impactObj2, collision.impactObj1)
+        circ.Centre.x += translate.x
+        circ.Centre.y += translate.y
 
-        movables[circ.Id] = velocity
+        // Calculate unit direction vector impact -> centre
+        dirVector := UnitDirectionVector(collision.impactObj1, circ.Centre)
+
+        translationDistance := DirectionVector(initialPosition, circ.Centre)
+
+        impactVelocity := Vector {
+            x: math.Sqrt(math.Pow(initialVelocity.x, 2) + 2.0 * gravity.x * translationDistance.x),
+            y: math.Sqrt(math.Pow(initialVelocity.y, 2) + 2.0 * gravity.y * translationDistance.y),
+        }
+
+        // We assume that the average velocity during the time tick approximates
+        // the direction we should reflect.
+        if (velocity.x < 0) {
+            impactVelocity.x = -impactVelocity.x
+        }
+
+        if (velocity.y < 0) {
+            impactVelocity.y = -impactVelocity.y
+        }
+
+        movables[circ.Id] = ReflectVelocity(dirVector, impactVelocity)
     }
 }
 
-// TODO: Calulate if partial or full overlap and closest impact
+// TODO: Calculate if partial or full overlap and closest impact
 func CheckCollisionPolyPoly(polyA *Polygon, polyB *Polygon) *Collision {
     polyAVertices := polyA.GetWorldVertices()
     polyBVertices := polyB.GetWorldVertices()
 
-    for _, polyVertices := range [][]Vector{ polyAVertices, polyBVertices } {
-        for idx, v1 := range polyVertices {
-            idx2 := (idx + 1) % len(polyVertices)
-            v2 := polyVertices[idx2]
+    for _, vertices := range [][]Vector{ polyAVertices, polyBVertices } {
+        for idx, v1 := range vertices {
+            idx2 := (idx + 1) % len(vertices)
+            v2 := vertices[idx2]
             
             normal := Vector{v2.y - v1.y, v1.x - v2.x}
 
@@ -242,78 +244,78 @@ func CheckCollisionPolyPoly(polyA *Polygon, polyB *Polygon) *Collision {
 
     return &Collision {
         collisionType: OVERLAP_PARTIAL,
-        closestImpact: Vector{ x: 0, y: 0 },
+        impactObj1: Vector{ x: 0, y: 0 },
+        impactObj2: Vector{ x: 0, y: 0 },
     }
 }
 
-func CheckCollisionCircCirc(circA *Circle, circB *Circle) *Collision {
-        distX := circA.Centre.x - circB.Centre.x
-        distY := circA.Centre.y - circB.Centre.y
-        distSq := math.Pow(distX, 2) + math.Pow(distY, 2)
-        radiusSq := math.Pow(circA.Radius + circB.Radius, 2)
+func CheckCollisionCircCirc(c1 *Circle, c2 *Circle) *Collision {
+    dirVector := DirectionVector(c1.Centre, c2.Centre)
+    distSq := math.Pow(dirVector.x, 2) + math.Pow(dirVector.y, 2)
+    radiusSq := math.Pow(c1.Radius + c2.Radius, 2)
+    collisionType := OVERLAP_PARTIAL
 
-        if distSq <= radiusSq {
-            var closestImpact Vector
-            
-            if circA.Centre.x > circB.Centre.x {
-                closestImpact.x = circB.Centre.x + distX / 2
-            } else {
-                closestImpact.x = circA.Centre.x + distX / 2
-            }
-
-            if circA.Centre.y > circB.Centre.y {
-                closestImpact.y = circB.Centre.y + distY / 2
-            } else {
-                closestImpact.y = circA.Centre.y + distY / 2
-            }
-
-            halfRadiusASq := math.Pow(circA.Radius / 2, 2)
-            halfRadiusBSq := math.Pow(circB.Radius / 2, 2)
-            if distSq < halfRadiusASq ||
-               distSq < halfRadiusBSq {
-                return &Collision{
-                    collisionType: OVERLAP_FULL,
-                    closestImpact: closestImpact,
-                }
-            }
-
-            return &Collision{
-                collisionType: OVERLAP_PARTIAL,
-                closestImpact: closestImpact,
-            }
-
+    if distSq <= radiusSq {
+        unitVectorA := UnitVector(dirVector)
+        unitVectorB := Vector {
+            x: -unitVectorA.x,
+            y: -unitVectorA.y,
         }
-        return nil
+
+        halfRadiusASq := math.Pow(c1.Radius / 2, 2)
+        halfRadiusBSq := math.Pow(c2.Radius / 2, 2)
+        if distSq < halfRadiusASq ||
+           distSq < halfRadiusBSq {
+            collisionType = OVERLAP_FULL
+        }
+
+        return &Collision{
+            collisionType: collisionType,
+            impactObj1: Vector {
+                x: unitVectorA.x * c1.Radius,
+                y: unitVectorA.y * c1.Radius,
+            },
+            impactObj2: Vector {
+                x: unitVectorB.x * c2.Radius,
+                y: unitVectorB.y * c2.Radius,
+            },
+        }
+
+    }
+    return nil
 }
 
 func HandleCollisionCircCirc(c1 *Circle, c2 *Circle, collision *Collision) {
-    for _, circ := range []*Circle{ c1, c2 } {    
-        if velocity, ok := movables[circ.Id]; ok {
-            // Calculate unit direction vector closestImpact -> centre
-            dirVector := UnitDirectionVector(circ.Centre, collision.closestImpact)
-            dot := DotProduct(velocity, dirVector)
+    // First translate circle to the point of impact
+    translate := DirectionVector(collision.impactObj1, collision.impactObj2)
+    c1.Centre.x += translate.x
+    c1.Centre.y += translate.y
 
-            // Reflect the circle velocity around the direction vector
-            velocity.x = velocity.x - 2 * dot * dirVector.x
-            velocity.y = velocity.y - 2 * dot * dirVector.y
+    // Calculate unit direction vector impact -> centre
+    dir1 := UnitDirectionVector(collision.impactObj1, c1.Centre)
+    movables[c1.Id] = ReflectVelocity(dir1, movables[c1.Id])
 
-            movables[circ.Id] = velocity
-        }
-    }
+    c2.Centre.x -= translate.x
+    c2.Centre.y -= translate.y
+
+    // Reuse dir1 since the result is the same for the reverse direction vector
+    movables[c2.Id] = ReflectVelocity(dir1, movables[c2.Id])
 }
 
 func UpdateSpeedsAndPositions() {
     for objIdx, speed := range movables {
         obj := objects[objIdx]
+
+        // We update position based on the average
+        // speed over the tick
+        origin := obj.GetOrigin()
+        origin.x += speed.x + (gravity.x / 2)
+        origin.y += speed.y + (gravity.y / 2)
+        obj.SetOrigin(origin)
+
         speed.x += gravity.x
         speed.y += gravity.y
-
         movables[objIdx] = speed
-
-        origin := obj.GetOrigin()
-        origin.x += speed.x
-        origin.y += speed.y
-        obj.SetOrigin(origin)
     }
 }
 

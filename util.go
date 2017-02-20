@@ -42,12 +42,34 @@ func LineGradientIntercept(a Vector, b Vector) (float64, float64) {
 
 func UnitDirectionVector(from Vector, to Vector) Vector {
     dirVector := Vector { to.x - from.x, to.y - from.y }
-    magnitude := math.Sqrt(math.Pow(dirVector.x, 2) + math.Pow(dirVector.y, 2))
-    dirVector.x = dirVector.x / magnitude
-    dirVector.y = dirVector.y / magnitude
-    return dirVector
+    return UnitVector(dirVector)
+}
+
+func UnitVector(v Vector) Vector {
+    magnitude := math.Sqrt(math.Pow(v.x, 2) + math.Pow(v.y, 2))
+    v.x = v.x / magnitude
+    v.y = v.y / magnitude
+    return v
+}
+
+func DirectionVector(from Vector, to Vector) Vector {
+    return Vector { to.x - from.x, to.y - from.y }
 }
 
 func DotProduct(a Vector, b Vector) float64 {
     return a.x * b.x + a.y * b.y
+}
+
+func ReflectVelocity(unitNormal Vector, velocity Vector) Vector {
+    dot := DotProduct(velocity, unitNormal)
+
+    // Reflect the velocity around the normal vector
+    return Vector {
+        x: velocity.x - 2 * dot * unitNormal.x,
+        y: velocity.y - 2 * dot * unitNormal.y,
+    }
+}
+
+func Magnitude(v Vector) float64 {
+    return math.Sqrt(math.Pow(v.x, 2) + math.Pow(v.y, 2))
 }

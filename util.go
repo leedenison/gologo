@@ -21,7 +21,7 @@ func Clamp(value, limit1, limit2 float64) float64 {
     return value
 }
 
-func LineGradientIntercept(a Vector, b Vector) (float64, float64) {
+func LineGradientIntercept(a *Vector2, b *Vector2) (float64, float64) {
     deltaX := a.x - b.x
     deltaY := a.y - b.y
 
@@ -40,36 +40,16 @@ func LineGradientIntercept(a Vector, b Vector) (float64, float64) {
     }
 }
 
-func UnitDirectionVector(from Vector, to Vector) Vector {
-    dirVector := Vector { to.x - from.x, to.y - from.y }
-    return UnitVector(dirVector)
-}
-
-func UnitVector(v Vector) Vector {
-    magnitude := math.Sqrt(math.Pow(v.x, 2) + math.Pow(v.y, 2))
-    v.x = v.x / magnitude
-    v.y = v.y / magnitude
-    return v
-}
-
-func DirectionVector(from Vector, to Vector) Vector {
-    return Vector { to.x - from.x, to.y - from.y }
-}
-
-func DotProduct(a Vector, b Vector) float64 {
-    return a.x * b.x + a.y * b.y
-}
-
-func ReflectVelocity(unitNormal Vector, velocity Vector) Vector {
-    dot := DotProduct(velocity, unitNormal)
+func ReflectVector(unitNormal *Vector2, v *Vector2) Vector2 {
+    dot := DotProduct(v, unitNormal)
 
     // Reflect the velocity around the normal vector
-    return Vector {
-        x: velocity.x - 2 * dot * unitNormal.x,
-        y: velocity.y - 2 * dot * unitNormal.y,
+    return Vector2 {
+        x: v.x - 2 * dot * unitNormal.x,
+        y: v.y - 2 * dot * unitNormal.y,
     }
 }
 
-func Magnitude(v Vector) float64 {
-    return math.Sqrt(math.Pow(v.x, 2) + math.Pow(v.y, 2))
+func CircleArea(radius float64) float64 {
+    return math.Pi * math.Pow(radius, 2)
 }

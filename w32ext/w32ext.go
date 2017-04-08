@@ -7,11 +7,14 @@ import "unsafe"
 var (
     moduser32 = syscall.NewLazyDLL("user32.dll")
     gdi32 = syscall.NewLazyDLL("gdi32.dll")
+    kernel32 = syscall.NewLazyDLL("kernel32.dll")
 
     procSetTimer = moduser32.NewProc("SetTimer")
     procKillTimer = moduser32.NewProc("KillTimer")
     procCreateCompatibleBitmap = gdi32.NewProc("CreateCompatibleBitmap")
     procGetCurrentObject = gdi32.NewProc("GetCurrentObject")
+    procQueryPerformanceCounter = kernel32.NewProc("QueryPerformanceCounter")
+    procQueryPerformanceFrequency = kernel32.NewProc("QueryPerformanceFrequency")
 )
 
 const (
@@ -38,6 +41,24 @@ func KillTimer(hwnd w32.HWND, nIDEvent uint32) bool {
         uintptr(nIDEvent))
 
     return ret != 0
+}
+
+func QueryPerformanceCounter() uint64 {
+    result := uint64(0)
+    procQueryPerformanceCounter.Call(
+        uintptr(unsafe.Pointer(&result)),
+    )
+
+    return result
+}
+
+func QueryPerformanceFrequency() uint64 {
+    result := uint64(0)
+    procQueryPerformanceFrequency.Call(
+        uintptr(unsafe.Pointer(&result)),
+    )
+
+    return result
 }
 
 func CreateCompatibleBitmap(hdc w32.HDC, width, height int32) w32.HBITMAP {

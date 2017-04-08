@@ -7,7 +7,7 @@ import (
     "unsafe"
 )
 
-const SIXTY_HZ_IN_MILLIS = 16
+const REFRESH_MILLIS = 16
 
 const GOLOGO_MAIN_WIN = "GOLOGO_MAIN"
 
@@ -16,7 +16,7 @@ const WIN_SIZE_Y = 768
 
 const TIMER_ID = iota
 
-var tickCount = 0
+var tickCount = uint64(0)
 
 var EventHandlers = map[uint32]func(w32.HWND, *w32ext.Event) {}
 
@@ -127,8 +127,7 @@ func SetTimer(
 }
 
 func WindowsTick(hwnd w32.HWND, ev *w32ext.Event) {
-    // TODO: Need to mutex this so we don't enter twice
-    PhysicsTick(hwnd)
+    PhysicsTick(hwnd, tickCount)
     if tickCount % PHYSICS_MULT == 0 {
         PaintTick(hwnd, ev)        
     }
@@ -144,9 +143,8 @@ func Run(title string) {
     CreateWindowClass(app, GOLOGO_MAIN_WIN)
     hwnd := CreateWindowInstance(app, GOLOGO_MAIN_WIN, title)
     CreateBuffer(hwnd)
-    CreateRenderers(hwnd)
-    UpdateWindowEdge(hwnd)
-    SetTimer(hwnd, TIMER_ID, SIXTY_HZ_IN_MILLIS / PHYSICS_MULT, WindowsTick)
+    CreatePainters(hwnd)
+    SetTimer(hwnd, TIMER_ID, REFRESH_MILLIS / PHYSICS_MULT, WindowsTick)
 
     var msg w32.MSG
     for {
@@ -158,7 +156,7 @@ func Run(title string) {
         w32.DispatchMessage(&msg)
     }
 
-    ReleaseRenderers(hwnd)
+    ReleasePainters(hwnd)
     ReleaseBuffer()
 
     return

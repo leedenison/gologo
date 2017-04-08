@@ -18,21 +18,20 @@ struct BITMAP {
 */
 import "C"
 
-const RENDER_BG = 0
-const RENDER_OBJ = 1
-
+const PAINTER_BG = 0
+const PAINTER_OBJ = 1
 
 var windowHeight = int32(0)
 
 var buffer = Buffer{}
 
-var renderers = map[int]*Renderer {
-    RENDER_BG: &Renderer{
+var painters = map[int]*Painter {
+    PAINTER_BG: &Painter{
         Type: OBJECT_SOLID,
         FGColor: w32ext.RGB(0, 0, 0),
         BGColor: w32ext.RGB(0, 0, 0),
     },
-    RENDER_OBJ: &Renderer{
+    PAINTER_OBJ: &Painter{
         Type: OBJECT_SOLID,
         FGColor: w32ext.RGB(0, 255, 0),
         BGColor: w32ext.RGB(0, 255, 0),
@@ -47,7 +46,7 @@ type Buffer struct {
     Height int32
 }
 
-type Renderer struct {
+type Painter struct {
     Type int
     FGColor uint32
     BGColor uint32
@@ -56,16 +55,21 @@ type Renderer struct {
     HBrush w32.HBRUSH
 }
 
+type RenderState struct {
+    Painter *Painter
+    Pen w32.HPEN
+    Brush w32.HBRUSH
+}
+
 func OnSize(hwnd w32.HWND, ev *w32ext.Event) {
     clientRect := w32.GetClientRect(hwnd)
     windowHeight = clientRect.Bottom
-    UpdateWindowEdge(hwnd)
     OnPaint(hwnd, ev)
 }
 
 func OnPaint(hwnd w32.HWND, ev *w32ext.Event) {
     if buffer.HDC != 0 {
-        ClearBuffer(hwnd, buffer.HDC, renderers[RENDER_BG])
+        ClearBuffer(hwnd, buffer.HDC, painters[PAINTER_BG])
         PaintObjects(hwnd, buffer.HDC)
         SwapBuffer(hwnd, buffer.HDC)
     }
@@ -76,69 +80,43 @@ func PaintTick(hwnd w32.HWND, ev *w32ext.Event) {
 }
 
 func PaintObjects(hwnd w32.HWND, hdc w32.HDC) {
-    var prevRenderer *Renderer
-    var prevPen w32.HPEN
-    var prevBrush w32.HBRUSH
+    var previous RenderState
 
     for _, obj := range objects {
-        switch t := obj.(type) {
-        case *Circle:
-            if t.Renderer.Type != OBJECT_EMPTY {
-                prevRenderer, prevPen, prevBrush =
-                    SelectRendererIfNeeded(
-                        hdc, 
-                        t.Renderer,
-                        prevRenderer,
-                        prevPen,
-                        prevBrush)
-
-                w32.Ellipse(
-                    hdc,
-                    int(t.Centre.x - t.Radius),
-                    int(windowHeight - int32(t.Centre.y - t.Radius)),
-                    int(t.Centre.x + t.Radius),
-                    int(windowHeight - int32(t.Centre.y + t.Radius)))
-            }
-        default:
-            _ = t
-        }
+        obj.GetRenderer().Render(obj, hdc, &previous)
     }
 
-    if prevPen != 0 {
-        w32.SelectObject(hdc, w32.HGDIOBJ(prevPen))
+    if previous.Pen != 0 {
+        w32.SelectObject(hdc, w32.HGDIOBJ(previous.Pen))
     }
 
-    if prevBrush != 0 {
-        w32.SelectObject(hdc, w32.HGDIOBJ(prevBrush))
+    if previous.Brush != 0 {
+        w32.SelectObject(hdc, w32.HGDIOBJ(previous.Brush))
     }
 }
 
-func SelectRendererIfNeeded(
+func SelectPainterIfNeeded(
         hdc w32.HDC,
-        renderer *Renderer,
-        prevRenderer *Renderer,
-        prevPen w32.HPEN,
-        prevBrush w32.HBRUSH) (*Renderer, w32.HPEN, w32.HBRUSH) {
-    if renderer != prevRenderer {
-        prevRenderer = renderer
-        tempPen, tempBrush := SelectRenderer(hdc, renderer)
+        Painter *Painter,
+        previous *RenderState) {
+    if Painter != previous.Painter {
+        previous.Painter = Painter
+        tempPen, tempBrush := SelectPainter(hdc, Painter)
 
-        if prevPen == 0 {
-            prevPen = tempPen
+        if previous.Pen == 0 {
+            previous.Pen = tempPen
         }
 
-        if prevBrush == 0 {
-            prevBrush = tempBrush
+        if previous.Brush == 0 {
+            previous.Brush = tempBrush
         }
     }
-
-    return prevRenderer, prevPen, prevBrush
 }
 
-func SelectRenderer(hdc w32.HDC, renderer *Renderer) (w32.HPEN, w32.HBRUSH) {
+func SelectPainter(hdc w32.HDC, Painter *Painter) (w32.HPEN, w32.HBRUSH) {
     // Select pen and store previous
-    prevPen := w32.SelectObject(hdc, w32.HGDIOBJ(renderer.HPen))
-    prevBrush := w32.SelectObject(hdc, w32.HGDIOBJ(renderer.HBrush))
+    prevPen := w32.SelectObject(hdc, w32.HGDIOBJ(Painter.HPen))
+    prevBrush := w32.SelectObject(hdc, w32.HGDIOBJ(Painter.HBrush))
 
     return w32.HPEN(prevPen), w32.HBRUSH(prevBrush)
 }
@@ -183,10 +161,10 @@ func SwapBuffer(hwnd w32.HWND, hdc w32.HDC) {
     w32.ReleaseDC(hwnd, wHdc)
 }
 
-func ClearBuffer(hwnd w32.HWND, hdc w32.HDC, renderer *Renderer) {
+func ClearBuffer(hwnd w32.HWND, hdc w32.HDC, Painter *Painter) {
     clientRect := w32.GetClientRect(hwnd)
 
-    prevPen, prevBrush := SelectRenderer(hdc, renderer)
+    prevPen, prevBrush := SelectPainter(hdc, Painter)
 
     w32.Rectangle(
         hdc,
@@ -217,33 +195,33 @@ func GetScreenRect(hwnd w32.HWND) w32.RECT {
     }
 }
 
-func CreateRenderers(hwnd w32.HWND) {
-    for _, renderer := range renderers {
+func CreatePainters(hwnd w32.HWND) {
+    for _, Painter := range painters {
         // Create brush and pen
-        renderer.LBrush = w32.LOGBRUSH {
+        Painter.LBrush = w32.LOGBRUSH {
             LbStyle: w32.BS_SOLID,
-            LbColor: w32.COLORREF(renderer.BGColor),
+            LbColor: w32.COLORREF(Painter.BGColor),
         }
-        renderer.HBrush = w32.CreateBrushIndirect(&renderer.LBrush)
-        renderer.HPen = w32.ExtCreatePen(
+        Painter.HBrush = w32.CreateBrushIndirect(&Painter.LBrush)
+        Painter.HPen = w32.ExtCreatePen(
             w32.PS_COSMETIC | w32.PS_SOLID,
             1,
-            &renderer.LBrush,
+            &Painter.LBrush,
             0,
             nil)
     }
 }
 
-func ReleaseRenderers(hwnd w32.HWND) {
-    for _, renderer := range renderers {
-        if renderer.HBrush != 0 {
-            w32.DeleteObject(w32.HGDIOBJ(renderer.HBrush))
-            renderer.HBrush = 0
+func ReleasePainters(hwnd w32.HWND) {
+    for _, Painter := range painters {
+        if Painter.HBrush != 0 {
+            w32.DeleteObject(w32.HGDIOBJ(Painter.HBrush))
+            Painter.HBrush = 0
         }
 
-        if renderer.HPen != 0 {
-            w32.DeleteObject(w32.HGDIOBJ(renderer.HPen))
-            renderer.HPen = 0
+        if Painter.HPen != 0 {
+            w32.DeleteObject(w32.HGDIOBJ(Painter.HPen))
+            Painter.HPen = 0
         }
     }
 }

@@ -1,7 +1,5 @@
 package gologo
 
-import "math"
-
 type Matrix2 [4]float64
 
 func (m *Matrix2) MultiplyVector2(v *Vector2) *Vector2 {
@@ -32,7 +30,7 @@ func (m *Matrix2) SetInverse(n *Matrix2) {
     determinant := n.Determinant()
 
     if (determinant == 0) {
-        return nil
+        return
     }
 
     inverse := float64(1.0) / determinant

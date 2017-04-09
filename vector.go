@@ -16,6 +16,14 @@ func (v *Vector2) Add(a *Vector2) {
     v.y += a.y
 }
 
+func (v *Vector2) AddAngle(a *Vector2) {
+    // cos(a + b) = cos(a).cos(b) - sin(a).sin(b)
+    v.x = v.x * a.x - v.y * a.y
+
+    // sin(a + b) = sin(a).cos(b) + cos(a).sin(b)
+    v.y = v.y * a.x + v.x * a.y
+}
+
 func (v *Vector2) Subtract(a *Vector2) {
     v.x -= a.x
     v.y -= a.y

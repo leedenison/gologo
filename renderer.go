@@ -280,7 +280,6 @@ func (r *ExplosionRenderer) Render(object *Object) {
     }
 
     age := TickTime.TickEnd - object.Creation
-    Trace.Printf("Rendering explosion: MaxAge: %v, age: %v, alpha: %v\n", r.MaxAge, age, 1.0 - float32(age) / float32(r.MaxAge))
     for i := 0; i < len(particles); i++ {
         r.MeshRenderers[particles[i].Renderer].RenderAt(
             object.Model.Mul4(particles[i].Model),
@@ -300,27 +299,23 @@ func (r *ExplosionRenderer) Animate(object *Object) {
         panic(fmt.Sprintf("Unexpected RenderData type: %t: %v\n",
             object.RenderData, object.RenderData))
     }
-    Trace.Printf("Animating particles: %v\n", len(particles))
 
     age := float32(TickTime.TickEnd - object.Creation)
     if particles == nil {
         particles = make([]*Particle, r.ParticleCount)
         for i:= 0; i < r.ParticleCount; i++ {
             particles[i] = r.createRandomParticle()
-            Trace.Printf("Created particle with mesh: %v\n", r.MeshRenderers[particles[i].Renderer].MeshVertices)
         }
     }
 
     for j := 0; j < len(particles); j++ {
         if age >= r.MaxAge {
-            Trace.Printf("Removing particle: before: %v\n", len(particles))
             if len(particles) > 1 {
                 particles = append(particles[:j], particles[j+1:]...)
             } else {
                 particles = particles[0:0]
             }
             j--
-            Trace.Printf("Removing particle: after: %v\n", len(particles))
         } else {
             particles[j].Model = particles[j].Velocity.Mul4(particles[j].Model)
         }

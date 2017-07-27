@@ -24,6 +24,8 @@ func InitObjectTypes(configs map[string]*ObjectTypeConfig) (
             renderer, err = InitGLMeshRenderer(&rendererConfig)
         case SpriteMeshRendererConfig:
             renderer, err = InitSpriteMeshRenderer(&rendererConfig)
+        case ExplosionRendererConfig:
+            renderer, err = InitExplosionRenderer(&rendererConfig)
         default:
             return nil, errors.Errorf("Unhandled RenderType: %v\n", config.RendererType)
         }
@@ -49,6 +51,16 @@ func InitObjectTypes(configs map[string]*ObjectTypeConfig) (
             } else {
                 return nil, errors.Errorf(
                     "Cannot use SPRITE_CIRCLE primitive with RendererType: %t\n", renderer)
+            }
+        case CIRCLE:
+            circleConfig, ok := config.PhysicsPrimitiveConfig.(CircleConfig)
+            if !ok {
+                return nil, errors.Errorf("Invalid CircleConfig: %v\n", config.PhysicsPrimitive)
+            }
+
+            primitive = &Circle {
+                Radius: circleConfig.Radius,
+                InverseMass: circleConfig.InverseMass,
             }
         default:
             return nil, errors.Errorf("Unhandled PhysicsPrimitiveType: %v\n",

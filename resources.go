@@ -30,17 +30,28 @@ type ObjectTypeConfig struct {
 
 type GLMeshRendererConfig struct {
     VertexShader string
-    TextureShader string
+    FragmentShader string
     Texture string
     MeshVertices []float32
 }
 
 type SpriteMeshRendererConfig struct {
     VertexShader string
-    TextureShader string
+    FragmentShader string
     Texture string
     TextureOrigin []int32
     MeshScaling float32
+}
+
+type ExplosionRendererConfig struct {
+    ParticleCount int
+    MaxAge float32
+    MeshRenderers []GLMeshRendererConfig
+}
+
+type CircleConfig struct {
+    Radius float32
+    InverseMass float32
 }
 
 type SpriteCirclePrimitiveConfig struct {}
@@ -107,6 +118,13 @@ func LoadObjectTypeConfig(resourcePath string) (*ObjectTypeConfig, error) {
             return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
         }
         parseResult.RendererConfig = rendererConfig
+    case EXPLOSION_RENDERER:
+        rendererConfig := ExplosionRendererConfig {}
+        err = json.Unmarshal(parseResult.Renderer, &rendererConfig)
+        if err != nil {
+            return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
+        }
+        parseResult.RendererConfig = rendererConfig
     default:
         return nil, errors.Errorf("Unknown RenderType: %v\n", parseResult.RendererType)
     }
@@ -114,6 +132,13 @@ func LoadObjectTypeConfig(resourcePath string) (*ObjectTypeConfig, error) {
     switch parseResult.PhysicsPrimitiveType {
     case SPRITE_CIRCLE:
         parseResult.PhysicsPrimitiveConfig = SpriteCirclePrimitiveConfig {}
+    case CIRCLE:
+        physicsPrimitiveConfig := CircleConfig {}
+        err = json.Unmarshal(parseResult.Renderer, &physicsPrimitiveConfig)
+        if err != nil {
+            return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
+        }
+        parseResult.PhysicsPrimitiveConfig = physicsPrimitiveConfig
     default:
         return nil, errors.Errorf("Unknown PhysicsPrimitiveType: %v\n",
             parseResult.PhysicsPrimitiveType)

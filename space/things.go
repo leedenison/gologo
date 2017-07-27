@@ -61,6 +61,13 @@ type Thing struct {
     Object *gologo.Object
 }
 
+func (t *Thing) GetAge() float32 {
+    if t.Object == nil {
+        return 0.0
+    }
+    return float32(gologo.TickTime.TickEnd - t.Object.Creation)
+}
+
 func (t *Thing) GetPosition() (int, int) {
     if t.Object == nil {
         return 0, 0
@@ -227,7 +234,7 @@ func (sb *ThingBuilder) Build(shipType string) *Thing {
     object := &gologo.Object {
         Config: gologo.ObjectTypeConfigs[shipType],
         Model: sb.Position.Mul4(sb.Orientation),
-        CreationTime: gologo.TickTime.TickEnd,
+        Creation: gologo.TickTime.TickEnd,
         ZOrder: sb.ZOrder,
     }
 

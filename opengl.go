@@ -12,7 +12,7 @@ type WindowState struct {
 }
 
 type GLState struct {
-    Shaders map[string]uint32
+    Shaders map[string]*GLShader
     Textures map[string]*GLTexture
     NextTextureUnit uint32
     Projection mgl32.Mat4
@@ -39,21 +39,6 @@ func KeyCallback(
 
 func PhysicsTime() int {
     return int(1000 * (glfw.GetTime() - TickTime.Start))
-}
-
-func InitShaderProgram(vertexShader string, textureShader string) (uint32, error) {
-    programKey := vertexShader + "," + textureShader
-    program, programExists := glState.Shaders[programKey]
-    if !programExists {
-        var err error
-        program, err = newProgram(SHADERS[vertexShader], SHADERS[textureShader])
-        if err != nil {
-            return 0, err
-        }
-        glState.Shaders[programKey] = program
-    }
-
-    return program, nil
 }
 
 func InitTexture(texturePath string) (*GLTexture, uint32, uint32, error) {

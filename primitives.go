@@ -61,7 +61,7 @@ func InitCircleFromMesh(mesh []float32) Primitive {
 func CircleIsOnScreen(circle *Circle, model mgl32.Mat4) bool {
     position := model.Col(3)
 
-    return position.Y() - circle.Radius <= float32(glWin.Height) && 
+    return position.Y() - circle.Radius <= float32(glWin.Height) &&
         position.Y() + circle.Radius >= 0.0 &&
         position.X() - circle.Radius <= float32(glWin.Width) &&
         position.X() + circle.Radius >= 0.0

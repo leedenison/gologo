@@ -10,7 +10,7 @@ type Object struct {
     ObjectType *ObjectType
     Model mgl32.Mat4
     ZOrder int
-    CreationTime float64
+    Creation float64
     RenderData interface{}
 }
 

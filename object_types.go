@@ -26,6 +26,8 @@ func InitObjectTypes(configs map[string]*ObjectTypeConfig) (
             renderer, err = InitSpriteMeshRenderer(&rendererConfig)
         case ExplosionRendererConfig:
             renderer, err = InitExplosionRenderer(&rendererConfig)
+        case TextRendererConfig:
+            renderer, err = InitTextRenderer(&rendererConfig)
         default:
             return nil, errors.Errorf("Unhandled RenderType: %v\n", config.RendererType)
         }
@@ -45,6 +47,8 @@ func InitObjectTypes(configs map[string]*ObjectTypeConfig) (
 
         var primitive Primitive
         switch config.PhysicsPrimitiveType {
+        case NONE:
+            break
         case SPRITE_CIRCLE:
             if meshRenderer, ok := renderer.(*GLMeshRenderer); ok {
                 primitive = InitCircleFromMesh(meshRenderer.MeshVertices)

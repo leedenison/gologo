@@ -191,14 +191,17 @@ type ThingBuilder struct {
     Config string
     Position mgl32.Mat4
     Orientation mgl32.Mat4
+    Scale mgl32.Mat4
     ZOrder int
     Tags []string
+    RenderData interface {}
 }
 
 func Builder() *ThingBuilder {
     return &ThingBuilder {
         Position: gologo.DEFAULT_POSITION,
         Orientation: gologo.DEFAULT_ORIENTATION,
+        Scale: gologo.DEFAULT_SCALE,
     }
 }
 
@@ -206,6 +209,11 @@ func (sb *ThingBuilder) SetDepth(z float32) *ThingBuilder {
     position := sb.Position.Col(3)
     position[2] = z
     sb.Position.SetCol(3, position)
+    return sb
+}
+
+func (sb *ThingBuilder) SetScale(factor float32) *ThingBuilder {
+    sb.Scale = mgl32.Scale3D(factor, factor, 1)
     return sb
 }
 
@@ -230,12 +238,20 @@ func (sb *ThingBuilder) AddTag(tag string) *ThingBuilder {
     return sb
 }
 
+func (sb *ThingBuilder) SetRenderData(data interface {}) *ThingBuilder {
+    sb.RenderData = data
+    return sb
+}
+
 func (sb *ThingBuilder) Build(shipType string) *Thing {
+    model := sb.Position.Mul4(sb.Orientation.Mul4(sb.Scale))
+
     object := &gologo.Object {
         Config: gologo.ObjectTypeConfigs[shipType],
-        Model: sb.Position.Mul4(sb.Orientation),
+        Model: model,
         Creation: gologo.TickTime.TickEnd,
         ZOrder: sb.ZOrder,
+        RenderData: sb.RenderData,
     }
 
     if objectType, ok := gologo.ObjectTypes[object.Config.Name]; ok {
@@ -301,4 +317,13 @@ func (t *ThingList) Contains(thing *Thing) bool {
     }
 
     return false
+}
+
+/////////////////////////////////////////////////////////////
+// TextBuilder
+//
+
+func (sb *ThingBuilder) BuildText(text string) *Thing {
+    return sb.SetRenderData(&gologo.RenderText { Text: []byte(text) }).
+        Build("TEXT")
 }

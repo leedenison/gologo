@@ -49,6 +49,20 @@ type ExplosionRendererConfig struct {
     MeshRenderers []GLMeshRendererConfig
 }
 
+type TextRendererConfig struct {
+    MeshRenderers map[string]CharRendererConfig
+    CharSpacer float32
+}
+
+type CharRendererConfig struct {
+    VertexShader string
+    FragmentShader string
+    Texture string
+    TextureSize [2]float32
+    TextureRect [][2]float32
+    CharRect [][2]float32
+}
+
 type CircleConfig struct {
     Radius float32
     InverseMass float32
@@ -125,13 +139,22 @@ func LoadObjectTypeConfig(resourcePath string) (*ObjectTypeConfig, error) {
             return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
         }
         parseResult.RendererConfig = rendererConfig
+    case TEXT_RENDERER:
+        rendererConfig := TextRendererConfig {}
+        err = json.Unmarshal(parseResult.Renderer, &rendererConfig)
+        if err != nil {
+            return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
+        }
+        parseResult.RendererConfig = rendererConfig
     default:
         return nil, errors.Errorf("Unknown RenderType: %v\n", parseResult.RendererType)
     }
 
     switch parseResult.PhysicsPrimitiveType {
+    case NONE:
+        break
     case SPRITE_CIRCLE:
-        parseResult.PhysicsPrimitiveConfig = SpriteCirclePrimitiveConfig {}
+        break
     case CIRCLE:
         physicsPrimitiveConfig := CircleConfig {}
         err = json.Unmarshal(parseResult.Renderer, &physicsPrimitiveConfig)

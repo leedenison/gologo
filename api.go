@@ -11,6 +11,7 @@ var DEFAULT_POSITION = mgl32.Translate3D(
     0.0)
 
 var DEFAULT_ORIENTATION = mgl32.Ident4()
+var DEFAULT_SCALE = mgl32.Ident4()
 
 func GetScreenWidth() int {
     return int(glWin.Width)

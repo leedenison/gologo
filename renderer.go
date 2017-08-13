@@ -14,11 +14,6 @@ type Renderer interface {
     Animate(object *Object)
 }
 
-type GLTexture struct {
-    ID uint32
-    TextureUnit uint32
-}
-
 /////////////////////////////////////////////////////////////
 // GLMeshRenderer
 //
@@ -54,7 +49,11 @@ func (r *GLMeshRenderer) RenderAt(model mgl32.Mat4, custom map[int]interface{}) 
 }
 
 func (r *GLMeshRenderer) DebugRender(object *Object) {
-    Trace.Printf("GLMeshRenderer: Model matrix:\n%v\n", object.Model)
+    //r.DebugRenderAt(object.Model, map[int]interface{}{})
+}
+
+func (r *GLMeshRenderer) DebugRenderAt(model mgl32.Mat4, custom map[int]interface{}) {
+    Trace.Printf("GLMeshRenderer: Model matrix:\n%v\n", model)
     Trace.Printf("GLMeshRenderer: Mesh vertices:\n%v\n", r.MeshVertices)
 
     rendered := []mgl32.Vec4 {}
@@ -66,7 +65,7 @@ func (r *GLMeshRenderer) DebugRender(object *Object) {
             1,
         }
 
-        rv = object.Model.Mul4x1(rv)
+        rv = model.Mul4x1(rv)
 
         rendered = append(rendered, rv)
     }
@@ -94,45 +93,45 @@ func InitSpriteMeshRenderer(config *SpriteMeshRendererConfig) (Renderer, error) 
         return nil, errors.New("Missing required field 'Texture'.")
     }
 
-    texture, sizeX, sizeY, err := InitTexture(config.Texture)
+    texture, err := InitTexture(config.Texture)
     if err != nil {
         return nil, err
     }
 
     meshVertices := []float32 {
         // Bottom left
-        (-float32(sizeX) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
-        (-float32(sizeY) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
+        (-float32(texture.Size[0]) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
+        (-float32(texture.Size[1]) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
         0.0,
         0.0,
         1.0,
         // Top right
-        (float32(sizeX) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
-        (float32(sizeY) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
+        (float32(texture.Size[0]) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
+        (float32(texture.Size[1]) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
         0.0,
         1.0,
         0.0,
         // Top left
-        (-float32(sizeX) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
-        (float32(sizeY) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
+        (-float32(texture.Size[0]) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
+        (float32(texture.Size[1]) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
         0.0,
         0.0,
         0.0,
         // Bottom left
-        (-float32(sizeX) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
-        (-float32(sizeY) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
+        (-float32(texture.Size[0]) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
+        (-float32(texture.Size[1]) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
         0.0,
         0.0,
         1.0,
         // Bottom right
-        (float32(sizeX) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
-        (-float32(sizeY) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
+        (float32(texture.Size[0]) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
+        (-float32(texture.Size[1]) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
         0.0,
         1.0,
         1.0,
         // Top right
-        (float32(sizeX) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
-        (float32(sizeY) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
+        (float32(texture.Size[0]) / 2 - float32(config.TextureOrigin[0])) * config.MeshScaling,
+        (float32(texture.Size[1]) / 2 + float32(config.TextureOrigin[1])) * config.MeshScaling,
         0.0,
         1.0,
         0.0,
@@ -150,7 +149,7 @@ func InitGLMeshRenderer(config *GLMeshRendererConfig) (Renderer, error) {
     var texture *GLTexture
     var err error
     if config.Texture != "" {
-        texture, _, _, err = InitTexture(config.Texture)
+        texture, err = InitTexture(config.Texture)
         if err != nil {
             return nil, err
         }
@@ -339,7 +338,7 @@ func (r *ExplosionRenderer) createRandomParticle() *Particle {
 func InitExplosionRenderer(config *ExplosionRendererConfig) (Renderer, error) {
     meshRenderers := []*GLMeshRenderer {}
     for _, meshRendererConfig := range config.MeshRenderers {
-        texture, _, _, err := InitTexture(meshRendererConfig.Texture)
+        texture, err := InitTexture(meshRendererConfig.Texture)
         if err != nil {
             return nil, err
         }
@@ -362,4 +361,175 @@ func InitExplosionRenderer(config *ExplosionRendererConfig) (Renderer, error) {
         MaxAge: config.MaxAge,
         MeshRenderers: meshRenderers,
     }, nil
+}
+
+
+/////////////////////////////////////////////////////////////
+// TextRenderer
+//
+
+type RenderText struct {
+    Text []byte
+    Transforms []mgl32.Mat4
+}
+
+type TextRenderer struct {
+    MeshRenderers map[byte]*GLMeshRenderer
+    CharWidths map[byte]float32
+    CharSpacer float32
+}
+
+func (r *TextRenderer) Render(object *Object) {
+    text, ok := object.RenderData.(*RenderText)
+    if !ok {
+        panic(fmt.Sprintf("Unexpected RenderData type: %t: %v\n",
+            object.RenderData, object.RenderData))
+    }
+
+    if len(text.Transforms) != len(text.Text) {
+        r.InitTransforms(text)
+    }
+
+    for i := 0; i < len(text.Text); i++ {
+        renderer, ok := r.MeshRenderers[text.Text[i]]
+
+        if ok {
+            renderer.RenderAt(
+                object.Model.Mul4(text.Transforms[i]),
+                map[int]interface{} {})
+        }
+    }
+}
+
+func (r *TextRenderer) InitTransforms(text *RenderText) {
+    var translate float32
+
+    if len(text.Text) == 0 {
+        return
+    }
+
+    text.Transforms = make([]mgl32.Mat4, len(text.Text))
+    for count := 0; count < len(text.Text); count++ {
+        width, ok := r.CharWidths[text.Text[count]]
+        if ok {
+            text.Transforms[count] = mgl32.Translate3D(
+                translate + (width / 2), 0, 0)
+            translate += width + r.CharSpacer
+        }
+    }
+
+    for count := 0; count < len(text.Text); count++ {
+        text.Transforms[count] = mgl32.Translate3D(-translate / 2, 0, 0).
+            Mul4(text.Transforms[count])
+    }
+}
+
+func (r *TextRenderer) DebugRender(object *Object) {
+    text, ok := object.RenderData.(*RenderText)
+    if !ok {
+        panic(fmt.Sprintf("Unexpected RenderData type: %t: %v\n",
+            object.RenderData, object.RenderData))
+    }
+
+    if len(text.Transforms) != len(text.Text) {
+        r.InitTransforms(text)
+    }
+
+    for i := 0; i < len(text.Text); i++ {
+        renderer, ok := r.MeshRenderers[text.Text[i]]
+
+        if ok {
+            renderer.DebugRenderAt(
+                object.Model.Mul4(text.Transforms[i]),
+                map[int]interface{} {})
+        }
+    }
+}
+
+func (r *TextRenderer) Animate(object *Object) {}
+
+func InitTextRenderer(config *TextRendererConfig) (*TextRenderer, error) {
+    result := TextRenderer {
+        CharWidths: map[byte]float32 {},
+        MeshRenderers: map[byte]*GLMeshRenderer {},
+        CharSpacer: config.CharSpacer,
+    }
+
+    for char, charConfig := range config.MeshRenderers {
+        bytes := []byte(char)
+
+        if len(bytes) != 1 {
+            Trace.Println("Ignoring multibyte character '%v'\n", char)
+            continue
+        }
+
+        texture, err := InitTexture(charConfig.Texture)
+        if err != nil {
+            return nil, err
+        }
+
+        charWidth := charConfig.CharRect[1][0] - charConfig.CharRect[0][0]
+        textureWidth := charConfig.TextureRect[1][0] - charConfig.TextureRect[0][0]
+        textureHeight := charConfig.TextureRect[1][1] - charConfig.TextureRect[0][1]
+        deltaRight := charConfig.TextureRect[1][0] - charConfig.CharRect[1][0]
+        deltaLeft := charConfig.CharRect[0][0] - charConfig.TextureRect[0][0]
+        widthDelta := deltaRight - deltaLeft
+        deltaTop := charConfig.CharRect[0][1] - charConfig.TextureRect[0][1]
+        deltaBottom := charConfig.TextureRect[1][1] - charConfig.CharRect[1][1]
+        heightDelta := deltaTop - deltaBottom
+
+        meshVertices := []float32 {
+            // Bottom left
+            (-float32(textureWidth) + widthDelta) / 2,
+            (-float32(textureHeight) + heightDelta) / 2,
+            0.0,
+            charConfig.TextureRect[0][0] / float32(texture.Size[0]),
+            charConfig.TextureRect[1][1] / float32(texture.Size[1]),
+            // Top right
+            (float32(textureWidth) + widthDelta) / 2,
+            (float32(textureHeight) + heightDelta) / 2,
+            0.0,
+            charConfig.TextureRect[1][0] / float32(texture.Size[0]),
+            charConfig.TextureRect[0][1] / float32(texture.Size[1]),
+            // Top left
+            (-float32(textureWidth) + widthDelta) / 2,
+            (float32(textureHeight) + heightDelta) / 2,
+            0.0,
+            charConfig.TextureRect[0][0] / float32(texture.Size[0]),
+            charConfig.TextureRect[0][1] / float32(texture.Size[1]),
+            // Bottom left
+            (-float32(textureWidth) + widthDelta) / 2,
+            (-float32(textureHeight) + heightDelta) / 2,
+            0.0,
+            charConfig.TextureRect[0][0] / float32(texture.Size[0]),
+            charConfig.TextureRect[1][1] / float32(texture.Size[1]),
+            // Bottom right
+            (float32(textureWidth) + widthDelta) / 2,
+            (-float32(textureHeight) + heightDelta) / 2,
+            0.0,
+            charConfig.TextureRect[1][0] / float32(texture.Size[0]),
+            charConfig.TextureRect[1][1] / float32(texture.Size[1]),
+            // Top right
+            (float32(textureWidth) + widthDelta) / 2,
+            (float32(textureHeight) + heightDelta) / 2,
+            0.0,
+            charConfig.TextureRect[1][0] / float32(texture.Size[0]),
+            charConfig.TextureRect[0][1] / float32(texture.Size[1]),
+        }
+
+        meshRenderer, err := InitMeshRenderer(
+            charConfig.VertexShader,
+            charConfig.FragmentShader,
+            texture,
+            []int {},
+            meshVertices)
+        if err != nil {
+            return nil, err
+        }
+
+        result.CharWidths[bytes[0]] = charWidth
+        result.MeshRenderers[bytes[0]] = meshRenderer
+    }
+
+    return &result, nil
 }

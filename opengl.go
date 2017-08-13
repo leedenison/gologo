@@ -18,6 +18,12 @@ type GLState struct {
     Projection mgl32.Mat4
 }
 
+type GLTexture struct {
+    ID uint32
+    TextureUnit uint32
+    Size [2]uint32
+}
+
 type TimeState struct {
     Start float64
     TickEnd float64
@@ -41,24 +47,23 @@ func PhysicsTime() int {
     return int(1000 * (glfw.GetTime() - TickTime.Start))
 }
 
-func InitTexture(texturePath string) (*GLTexture, uint32, uint32, error) {
-    var texture, sizeX, sizeY uint32
-    var err error
+func InitTexture(texturePath string) (*GLTexture, error) {
     result, textureExists := glState.Textures[texturePath]
     if !textureExists {
-        texture, sizeX, sizeY, err = newTexture(
+        texture, sizeX, sizeY, err := newTexture(
             executablePath + PATH_SEPARATOR + texturePath,
             glState.NextTextureUnit)
         if err != nil {
-            return nil, 0, 0, err
+            return nil, err
         }
         result = &GLTexture {
             ID: texture,
             TextureUnit: glState.NextTextureUnit,
+            Size: [2]uint32 { sizeX, sizeY },
         }
         glState.Textures[texturePath] = result
         glState.NextTextureUnit++
     }
 
-    return result, sizeX, sizeY, nil
+    return result, nil
 }

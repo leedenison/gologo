@@ -35,6 +35,9 @@ func init() {
 
     TickTime.Start = 0
     TickTime.TickEnd = 0
+    glWin.Width = DEFAULT_WIN_SIZE_X
+    glWin.Height = DEFAULT_WIN_SIZE_Y
+
 }
 
 func getProgramPath() (string, error) {
@@ -47,9 +50,6 @@ func getProgramPath() (string, error) {
 }
 
 func Run(title string) {
-    glWin.Width = DEFAULT_WIN_SIZE_X
-    glWin.Height = DEFAULT_WIN_SIZE_Y
-
     if err := glfw.Init(); err != nil {
         Error.Fatalln("glfw.Init failed:", err)
     }

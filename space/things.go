@@ -2,6 +2,7 @@ package space
 
 import (
     "fmt"
+    "math"
     "github.com/leedenison/gologo"
     "github.com/go-gl/mathgl/mgl32"
     "strings"
@@ -147,6 +148,41 @@ func (t *Thing) MoveRight(amount int) {
         Mul4(t.Object.Model)
 }
 
+func (t *Thing) TurnClockwise(angle int) {
+    rotation := mgl32.HomogRotate3DZ(
+        mgl32.DegToRad(float32(angle)))
+
+    t.Object.Model = t.Object.Model.Mul4(rotation)
+}
+
+func (t *Thing) TurnAntiClockwise(angle int) {
+    rotation := mgl32.HomogRotate3DZ(
+        mgl32.DegToRad(float32(-angle)))
+
+    t.Object.Model = t.Object.Model.Mul4(rotation)
+}
+
+func (t *Thing) Direction() int {
+    angle := math.Atan2(float64(t.Object.Model.At(1, 1)), float64(t.Object.Model.At(0, 1))) - math.Pi / 2
+
+    if angle <= -0 {
+        return int(mgl32.RadToDeg(float32(angle + 2 * math.Pi)))
+    } else {
+        return int(mgl32.RadToDeg(float32(angle)))
+    }
+}
+
+func (t *Thing) DirectionOf(other *Thing) int {
+    direction := other.Object.Model.Col(3).Vec3().Sub(t.Object.Model.Col(3).Vec3())
+    angle := math.Atan2(float64(direction[1]), float64(direction[0])) - math.Pi / 2
+
+    if angle <= -0 {
+        return int(mgl32.RadToDeg(float32(angle + 2 * math.Pi)))
+    } else {
+        return int(mgl32.RadToDeg(float32(angle)))
+    }
+}
+
 func (t *Thing) IsOnScreen() bool {
     if t.Object == nil {
         return false
@@ -191,7 +227,7 @@ type ThingBuilder struct {
     Config string
     Position mgl32.Mat4
     Orientation mgl32.Mat4
-    Scale mgl32.Mat4
+    RenderScale mgl32.Mat4
     ZOrder int
     Tags []string
     RenderData interface {}
@@ -201,7 +237,7 @@ func Builder() *ThingBuilder {
     return &ThingBuilder {
         Position: gologo.DEFAULT_POSITION,
         Orientation: gologo.DEFAULT_ORIENTATION,
-        Scale: gologo.DEFAULT_SCALE,
+        RenderScale: gologo.DEFAULT_SCALE,
     }
 }
 
@@ -213,7 +249,7 @@ func (sb *ThingBuilder) SetDepth(z float32) *ThingBuilder {
 }
 
 func (sb *ThingBuilder) SetScale(factor float32) *ThingBuilder {
-    sb.Scale = mgl32.Scale3D(factor, factor, 1)
+    sb.RenderScale = mgl32.Scale3D(factor, factor, 1)
     return sb
 }
 
@@ -244,7 +280,7 @@ func (sb *ThingBuilder) SetRenderData(data interface {}) *ThingBuilder {
 }
 
 func (sb *ThingBuilder) Build(shipType string) *Thing {
-    model := sb.Position.Mul4(sb.Orientation.Mul4(sb.Scale))
+    model := sb.Position.Mul4(sb.Orientation.Mul4(sb.RenderScale))
 
     object := &gologo.Object {
         Config: gologo.ObjectTypeConfigs[shipType],

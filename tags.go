@@ -1,17 +1,19 @@
 package gologo
 
+type ObjectSet map[*Object]bool
+
 func Tag(object *Object, tag string) {
-    set, exists := Tags[tag]
+    set, exists := tags[tag]
     if !exists {
-        set = make(map[*Object]bool)
-        Tags[tag] = set
+        set = make(ObjectSet)
+        tags[tag] = set
     }
 
     set[object] = true
 }
 
 func Untag(object *Object, tag string) {
-    set, exists := Tags[tag]
+    set, exists := tags[tag]
     if !exists {
         return
     }
@@ -20,13 +22,13 @@ func Untag(object *Object, tag string) {
 }
 
 func UntagAll(object *Object) {
-    for _, set := range Tags {
+    for _, set := range tags {
         delete(set, object)
     }
 }
 
 func HasTag(object *Object, tag string) bool {
-    set, exists := Tags[tag]
+    set, exists := tags[tag]
     if !exists {
         return false
     }

@@ -12,7 +12,7 @@ var (
     Error   *log.Logger
 )
 
-func InitLogging(
+func InitLogger(
     traceHandle io.Writer,
     infoHandle io.Writer,
     warningHandle io.Writer,

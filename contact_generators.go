@@ -23,13 +23,13 @@ type TaggedContactGenerator struct {
 
 func (cg *TaggedContactGenerator) GenerateContacts() []*Contact {
     result := []*Contact {}
-    sourceSet, existsSrc := Tags[cg.SourceTag]
-    targetSet, existsTgt := Tags[cg.TargetTag]
+    sourceSet, existsSrc := tags[cg.SourceTag]
+    targetSet, existsTgt := tags[cg.TargetTag]
 
     if existsSrc && existsTgt {
         for objectA, _ := range sourceSet {
             for objectB, _ := range targetSet {
-                if objectA != objectB {
+                if objectA != objectB && objectA.Primitive != nil && objectB.Primitive != nil {
                     contactPoint, contactNormal, penetration :=
                         cg.GenerateContactData(objectA, objectB)
 
@@ -63,17 +63,17 @@ func (cg *TaggedContactGenerator) UpdateContact(
 
 func (cg *TaggedContactGenerator) GenerateContactData(
         objectA *Object, objectB *Object) (mgl32.Vec4, mgl32.Vec4, float32) {
-    switch primitiveA := objectA.ObjectType.Primitive.(type) {
+    switch primitiveA := objectA.Primitive.(type) {
     case *Circle:
-        switch primitiveB := objectB.ObjectType.Primitive.(type) {
+        switch primitiveB := objectB.Primitive.(type) {
         case *Circle:
             return CalcCircleCircleContact(
                 primitiveA, objectA.Model, primitiveB, objectB.Model)
         default:
-            panic(fmt.Sprintf("Unhandled primitive type: %t\n", objectB.ObjectType.Primitive))
+            panic(fmt.Sprintf("Unhandled primitive type: %t\n", objectB.Primitive))
         }
     default:
-        panic(fmt.Sprintf("Unhandled primitive type: %t\n", objectA.ObjectType.Primitive))
+        panic(fmt.Sprintf("Unhandled primitive type: %t\n", objectA.Primitive))
     }
 }
 
@@ -93,26 +93,28 @@ type ScreenEdgeContactData struct {
 
 func (cg *ScreenEdgeContactGenerator) GenerateContacts() []*Contact {
     result := []*Contact {}
-    set, exists := Tags[cg.Tag]
+    set, exists := tags[cg.Tag]
 
     if exists {
         for object, _ := range set {
-            for direction := SCREEN_UP; direction <= SCREEN_RIGHT; direction++ {
-                contactPoint, contactNormal, penetration :=
-                    cg.GenerateContactData(object, direction)
+            if object.Primitive != nil {
+                for direction := SCREEN_UP; direction <= SCREEN_RIGHT; direction++ {
+                    contactPoint, contactNormal, penetration :=
+                        cg.GenerateContactData(object, direction)
 
-                if penetration > 0 {
-                    result = append(result, &Contact {
-                        Objects: [2]*Object { object },
-                        ContactGenerator: cg,
-                        GeneratorData: &ScreenEdgeContactData { direction },
-                        ContactNormal: contactNormal,
-                        ContactPoint: contactPoint,
-                        Penetration: penetration,
-                        PenetrationResolver: cg.PenetrationResolver,
-                        PostContactResolver: cg.PostContactResolver,
-                    })
-                }
+                    if penetration > 0 {
+                        result = append(result, &Contact {
+                            Objects: [2]*Object { object },
+                            ContactGenerator: cg,
+                            GeneratorData: &ScreenEdgeContactData { direction },
+                            ContactNormal: contactNormal,
+                            ContactPoint: contactPoint,
+                            Penetration: penetration,
+                            PenetrationResolver: cg.PenetrationResolver,
+                            PostContactResolver: cg.PostContactResolver,
+                        })
+                    }
+                }                
             }
         }
     }
@@ -137,19 +139,19 @@ func (cg *ScreenEdgeContactGenerator) UpdateContact(
 
 func (cg *ScreenEdgeContactGenerator) GenerateContactData(
         object *Object, direction ScreenDirection) (mgl32.Vec4, mgl32.Vec4, float32) {
-    switch primitive := object.ObjectType.Primitive.(type) {
+    switch primitive := object.Primitive.(type) {
     case *Circle:
         position := object.Model.Col(3)
         switch direction {
         case SCREEN_UP:
             return mgl32.Vec4 {
                 position.X(),
-                (float32(glWin.Height) + position.Y() + primitive.Radius) / 2,
+                (float32(windowState.Height) + position.Y() + primitive.Radius) / 2,
                 0.0,
                 1.0,
             },
             mgl32.Vec4 { 0.0, -1.0, 0.0, 1.0 },
-            position.Y() + primitive.Radius - float32(glWin.Height)
+            position.Y() + primitive.Radius - float32(windowState.Height)
         case SCREEN_DOWN:
             return mgl32.Vec4 {
                 position.X(),
@@ -170,17 +172,17 @@ func (cg *ScreenEdgeContactGenerator) GenerateContactData(
             primitive.Radius - position.X()
         case SCREEN_RIGHT:
             return mgl32.Vec4 {
-                (float32(glWin.Width) + position.X() + primitive.Radius) / 2,
+                (float32(windowState.Width) + position.X() + primitive.Radius) / 2,
                 position.Y(),
                 0.0,
                 1.0,
             },
             mgl32.Vec4 { -1.0, 0.0, 0.0, 1.0 },
-            position.X() + primitive.Radius - float32(glWin.Width)
+            position.X() + primitive.Radius - float32(windowState.Width)
         default:
             panic(fmt.Sprintf("Unknown ScreenDirection: %v\n", direction))
         }
     default:
-        panic(fmt.Sprintf("Unhandled primitive type: %t\n", object.ObjectType.Primitive))
+        panic(fmt.Sprintf("Unhandled primitive type: %t\n", object.Primitive))
     }
 }

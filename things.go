@@ -1,28 +1,27 @@
-package space
+package gologo
 
 import (
     "fmt"
     "math"
-    "github.com/leedenison/gologo"
     "github.com/go-gl/mathgl/mgl32"
     "strings"
 )
 
-var objectIndex = map[*gologo.Object]*Thing {}
+var objectIndex = map[*Object]*Thing {}
 
 func OnHit(tag1 string, tag2 string, f func(*Thing, *Thing)) {
     post := &ThingPostContactResolver {
         Callback: f,
     }
 
-    gologo.CreateTaggedContactGenerator(tag1, tag2, nil, post)
+    CreateTaggedContactGenerator(tag1, tag2, nil, post)
 }
 
 type ThingPostContactResolver struct {
     Callback func(*Thing, *Thing)
 }
 
-func (t *ThingPostContactResolver) ResolveContact(contact *gologo.Contact) {
+func (t *ThingPostContactResolver) ResolveContact(contact *Contact) {
     thing1, thing1Exists := objectIndex[contact.Objects[0]]
     if !thing1Exists {
         thing1 = &Thing {}
@@ -36,17 +35,17 @@ func (t *ThingPostContactResolver) ResolveContact(contact *gologo.Contact) {
     t.Callback(thing1, thing2)
 }
 
-func ShowAllShips() {
+func ShowAllThings(prefix string) {
     objectSpace := 100
-    objectsPerRow := (gologo.DEFAULT_WIN_SIZE_X / objectSpace) - 1
+    objectsPerRow := (DEFAULT_WIN_SIZE_X / objectSpace) - 1
     i := 0
 
-    for name, _ := range gologo.ObjectTypeConfigs {
-        if strings.HasPrefix(name, "SHIP") {
+    for name, _ := range configs {
+        if strings.HasPrefix(name, prefix) {
             positionX := (i % objectsPerRow + 1) * objectSpace
             positionY := (i / objectsPerRow + 1) * objectSpace
 
-            gologo.Trace.Printf("Building ship(%v) at: %v, %v\n", name, positionX, positionY)
+            Trace.Printf("Building thing(%v) at: %v, %v\n", name, positionX, positionY)
             Builder().SetPosition(positionX, positionY).Build(name)
 
             i++
@@ -59,14 +58,14 @@ func ShowAllShips() {
 //
 
 type Thing struct {
-    Object *gologo.Object
+    Object *Object
 }
 
-func (t *Thing) GetAge() float32 {
+func (t *Thing) GetAge() int {
     if t.Object == nil {
-        return 0.0
+        return 0
     }
-    return float32(gologo.TickTime.TickEnd - t.Object.Creation)
+    return GetTickTime() - t.Object.Creation
 }
 
 func (t *Thing) GetPosition() (int, int) {
@@ -187,11 +186,13 @@ func (t *Thing) IsOnScreen() bool {
     if t.Object == nil {
         return false
     }
-    switch primitive := t.Object.ObjectType.Primitive.(type) {
-    case *gologo.Circle:
-        return gologo.CircleIsOnScreen(primitive, t.Object.Model)
+    switch primitive := t.Object.Primitive.(type) {
+    case nil:
+        return OriginIsOnScreen(t.Object.Model)
+    case *Circle:
+        return CircleIsOnScreen(primitive, t.Object.Model)
     default:
-        panic(fmt.Sprintf("Unhandled primitive type: %t\n", t.Object.ObjectType.Primitive))
+        panic(fmt.Sprintf("Unhandled primitive type: %t\n", t.Object.Primitive))
     }
 }
 
@@ -199,14 +200,14 @@ func (t *Thing) Delete() {
     if t.Object == nil {
         return
     }
-    gologo.UntagAll(t.Object)
+    UntagAll(t.Object)
 
-    for idx, object := range gologo.Objects {
+    for idx, object := range objects {
         if object == t.Object {
-            if len(gologo.Objects) > 1 {
-                gologo.Objects = append(gologo.Objects[:idx], gologo.Objects[idx+1:]...)
+            if len(objects) > 1 {
+                objects = append(objects[:idx], objects[idx+1:]...)
             } else {
-                gologo.Objects = gologo.Objects[0:0]
+                objects = objects[0:0]
             }
         }
     }
@@ -235,9 +236,9 @@ type ThingBuilder struct {
 
 func Builder() *ThingBuilder {
     return &ThingBuilder {
-        Position: gologo.DEFAULT_POSITION,
-        Orientation: gologo.DEFAULT_ORIENTATION,
-        RenderScale: gologo.DEFAULT_SCALE,
+        Position: DEFAULT_POSITION,
+        Orientation: DEFAULT_ORIENTATION,
+        RenderScale: DEFAULT_SCALE,
     }
 }
 
@@ -274,38 +275,33 @@ func (sb *ThingBuilder) AddTag(tag string) *ThingBuilder {
     return sb
 }
 
-func (sb *ThingBuilder) SetRenderData(data interface {}) *ThingBuilder {
-    sb.RenderData = data
-    return sb
-}
-
-func (sb *ThingBuilder) Build(shipType string) *Thing {
+func (sb *ThingBuilder) Build(thingType string) *Thing {
     model := sb.Position.Mul4(sb.Orientation.Mul4(sb.RenderScale))
 
-    object := &gologo.Object {
-        Config: gologo.ObjectTypeConfigs[shipType],
-        Model: model,
-        Creation: gologo.TickTime.TickEnd,
-        ZOrder: sb.ZOrder,
-        RenderData: sb.RenderData,
+    template, ok := templates[thingType]
+    if !ok {
+        panic(fmt.Sprintf("Invalid object template: %v\n", thingType))
     }
 
-    if objectType, ok := gologo.ObjectTypes[object.Config.Name]; ok {
-        object.ObjectType = objectType
+    object := template.CreateObject(model)
+    object.ZOrder = sb.ZOrder
+
+    meshRenderer, ok := object.Renderer.(*MeshRenderer)
+    if object.Primitive == nil && ok {
+        object.Primitive = InitCircleFromMesh(meshRenderer.MeshVertices)
     }
 
-    gologo.Objects = append(gologo.Objects, object)
+    objects = append(objects, object)
 
     for _, tag := range sb.Tags {
-        gologo.Tag(object, tag)
+        Tag(object, tag)
     }
 
     objectIndex[object] = &Thing {
         Object: object,
     }
-
     return objectIndex[object]
-}
+ }
 
 /////////////////////////////////////////////////////////////
 // ThingList
@@ -360,6 +356,14 @@ func (t *ThingList) Contains(thing *Thing) bool {
 //
 
 func (sb *ThingBuilder) BuildText(text string) *Thing {
-    return sb.SetRenderData(&gologo.RenderText { Text: []byte(text) }).
-        Build("TEXT")
+    thing := sb.Build("TEXT");
+    renderer := thing.Object.Renderer
+
+    textRenderer, ok := renderer.(*TextRenderer)
+    if !ok {
+        panic(fmt.Sprintf("Invalid text renderer type: %t\n", renderer))
+    }
+
+    textRenderer.Text = []byte(text)
+    return thing
 }

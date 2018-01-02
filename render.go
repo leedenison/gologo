@@ -120,6 +120,8 @@ func (r *MeshRenderer) bindCustomUniform(
         gl.Uniform1i(shader.Uniforms[location], tValue)
     case float32:
         gl.Uniform1f(shader.Uniforms[location], tValue)
+    case mgl32.Vec4:
+        gl.Uniform4fv(shader.Uniforms[location], 1, &tValue[0])
     default:
         panic(fmt.Sprintf("Unhandled uniform(%v) value type: %t\n", location, value))
     }

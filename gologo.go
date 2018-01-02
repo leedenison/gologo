@@ -55,6 +55,10 @@ func Run() {
     return
 }
 
+func AddObject(object *Object) {
+    objects = append(objects, object)
+}
+
 func GetScreenWidth() int {
     return int(windowState.Width)
 }

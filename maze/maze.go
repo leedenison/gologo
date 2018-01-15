@@ -7,6 +7,8 @@ import (
     "github.com/leedenison/gologo"
 )
 
+var player *gologo.Object
+
 var DEFAULT_SCREEN_SIZE_FACTOR = float32(0.8)
 var DEFAULT_WALL_WIDTH_FACTOR = float32(0.1)
 var DEFAULT_ROOM_BORDER_FACTOR = float32(0.2)
@@ -109,22 +111,8 @@ func initializeMaze(size [2]int) *Maze {
         result.RoomSize,
         [2]float32 { result.RoomSize, result.RoomSize / 2 })
 
-    // initialize end point
-    roomBorder := result.RoomSize * DEFAULT_ROOM_BORDER_FACTOR
-    endBottomLeft := [2]float32 {
-        result.BottomLeft[0] + float32(result.End[0]) * result.RoomSize + roomBorder,
-        result.BottomLeft[1] + float32(result.End[1]) * result.RoomSize + roomBorder,
-    }
-    end := gologo.Rectangle(
-      gologo.Rect {
-          endBottomLeft,
-          {
-              endBottomLeft[0] + result.RoomSize - 2 * roomBorder,
-              endBottomLeft[1] + result.RoomSize - 2 * roomBorder,
-          },
-      },
-      mgl32.Vec4 { 1.0, 0.0, 0.0, 1.0 })
-    gologo.TagRender(end)
+    player = initializeStart(result)
+    initializeEnd(result)
 
     return result
 }
@@ -135,6 +123,43 @@ func initializeRooms(size [2]int) [][]bool {
         rooms[i] = make([]bool, size[1])
     }
     return rooms
+}
+
+func initializeStart(maze *Maze) *gologo.Object {
+    roomBorder := maze.RoomSize * DEFAULT_ROOM_BORDER_FACTOR
+    startBottomLeft := [2]float32 {
+        maze.BottomLeft[0] + float32(maze.Start[0]) * maze.RoomSize + roomBorder,
+        maze.BottomLeft[1] + float32(maze.Start[1]) * maze.RoomSize + roomBorder,
+    }
+    start := gologo.Rectangle(
+      gologo.Rect {
+          startBottomLeft,
+          {
+              startBottomLeft[0] + maze.RoomSize - 2 * roomBorder,
+              startBottomLeft[1] + maze.RoomSize - 2 * roomBorder,
+          },
+      },
+      mgl32.Vec4 { 0.0, 1.0, 0.0, 1.0 })
+    gologo.TagRender(start)
+    return start
+}
+
+func initializeEnd(maze *Maze) {
+    roomBorder := maze.RoomSize * DEFAULT_ROOM_BORDER_FACTOR
+    endBottomLeft := [2]float32 {
+        maze.BottomLeft[0] + float32(maze.End[0]) * maze.RoomSize + roomBorder,
+        maze.BottomLeft[1] + float32(maze.End[1]) * maze.RoomSize + roomBorder,
+    }
+    end := gologo.Rectangle(
+      gologo.Rect {
+          endBottomLeft,
+          {
+              endBottomLeft[0] + maze.RoomSize - 2 * roomBorder,
+              endBottomLeft[1] + maze.RoomSize - 2 * roomBorder,
+          },
+      },
+      mgl32.Vec4 { 1.0, 0.0, 0.0, 1.0 })
+    gologo.TagRender(end)
 }
 
 func initializeBorder(mazeSize [2]int, bottomLeft [2]float32, roomSize float32, halfWallWidth float32) {

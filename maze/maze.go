@@ -1,17 +1,34 @@
 package maze
 
 import (
+    "fmt"
     "container/list"
     "math/rand"
     "github.com/go-gl/mathgl/mgl32"
     "github.com/leedenison/gologo"
 )
 
-var player *gologo.Object
+var callbackMap = []*Maze {}
+var lastCallback = int(0)
+
+func mazeTickCallback(tick int) {
+    if tick - lastCallback > DEFAULT_TICK_INCREMENT {
+        for _, maze := range callbackMap {
+            if maze.Callback != nil && !maze.HasRemainingMoves() {
+                maze.Callback(maze)
+            }
+            maze.DoMove()
+        }
+        lastCallback = tick
+    }
+}
+
 
 var DEFAULT_SCREEN_SIZE_FACTOR = float32(0.8)
 var DEFAULT_WALL_WIDTH_FACTOR = float32(0.1)
 var DEFAULT_ROOM_BORDER_FACTOR = float32(0.2)
+
+var DEFAULT_TICK_INCREMENT = 750
 
 type Maze struct {
     Size [2]int
@@ -21,9 +38,78 @@ type Maze struct {
     VWalls [][]*gologo.Object
     BottomLeft [2]float32
     RoomSize float32
+    Player *gologo.Object
+    Callback func(*Maze)
+    MoveQueue []Direction
+    Move int
 }
 
-func GenerateMaze(size [2]int) *Maze {
+type Direction int
+
+const (
+    UP Direction = iota
+    DOWN
+    LEFT
+    RIGHT
+)
+
+func (maze *Maze) MoveUp() {
+    maze.MoveQueue = append(maze.MoveQueue, UP)
+}
+
+func (maze *Maze) MoveDown() {
+    maze.MoveQueue = append(maze.MoveQueue, DOWN)
+}
+
+func (maze *Maze) MoveLeft() {
+    maze.MoveQueue = append(maze.MoveQueue, LEFT)
+}
+
+func (maze *Maze) MoveRight() {
+    maze.MoveQueue = append(maze.MoveQueue, RIGHT)
+}
+
+func (maze *Maze) HasRemainingMoves() bool {
+    return maze.Move < len(maze.MoveQueue)
+}
+
+func (maze *Maze) DoMove() {
+    if maze.HasRemainingMoves() {
+        direction := maze.MoveQueue[maze.Move]
+
+        switch direction {
+        case UP:
+            maze.Player.Model = mgl32.Translate3D(0, maze.RoomSize, 0).
+                Mul4(maze.Player.Model)
+        case DOWN:
+            maze.Player.Model = mgl32.Translate3D(0, -maze.RoomSize, 0).
+                Mul4(maze.Player.Model)
+        case LEFT:
+            maze.Player.Model = mgl32.Translate3D(-maze.RoomSize, 0, 0).
+                Mul4(maze.Player.Model)
+        case RIGHT:
+            maze.Player.Model = mgl32.Translate3D(maze.RoomSize, 0, 0).
+                Mul4(maze.Player.Model)
+        default:
+            panic(fmt.Sprintf("Unknown direction: %v\n", direction))
+        }
+
+        maze.Move++
+    }
+}
+
+func Run(x, y int, callback func(*Maze)) {
+    defer gologo.Cleanup()
+    gologo.Init()
+
+    maze := GenerateMaze([2]int { x, y }, callback)
+    callbackMap = append(callbackMap, maze)
+
+    gologo.SetTickFunction(mazeTickCallback)
+    gologo.Run()
+}
+
+func GenerateMaze(size [2]int, callback func(*Maze)) *Maze {
     maze := initializeMaze(size)
     rooms := initializeRooms(size)
     roomsList := list.New()
@@ -40,6 +126,8 @@ func GenerateMaze(size [2]int) *Maze {
         addRoom(maze, rooms, roomsList, extension)
         removeWall(maze, randomRoom, extension)
     }
+
+    maze.Callback = callback
 
     return maze
 }
@@ -111,7 +199,7 @@ func initializeMaze(size [2]int) *Maze {
         result.RoomSize,
         [2]float32 { result.RoomSize, result.RoomSize / 2 })
 
-    player = initializeStart(result)
+    result.Player = initializeStart(result)
     initializeEnd(result)
 
     return result

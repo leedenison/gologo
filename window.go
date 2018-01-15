@@ -55,6 +55,17 @@ func CreateWindow(title string) error {
     return nil
 }
 
+func GetWindowSize() [2]float32 {
+    return [2]float32 { float32(windowState.Height), float32(windowState.Width) }
+}
+
+func GetWindowCenter() [2]float32 {
+    return [2]float32 {
+        float32(windowState.Width) / 2.0,
+        float32(windowState.Height) / 2.0,
+    }
+}
+
 func GetResourcePath() (string, error) {
     path, err := GetExecutablePath()
     if err != nil {

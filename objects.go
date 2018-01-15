@@ -19,6 +19,20 @@ func CreateObject(model mgl32.Mat4) *Object {
     }
 }
 
+func (object *Object) Clone() *Object {
+    objectCopy := *object
+
+    if object.Renderer != nil {
+        objectCopy.Renderer = object.Renderer.Clone()
+    }
+
+    if object.Primitive != nil {
+        objectCopy.Primitive = object.Primitive.Clone()
+    }
+
+    return &objectCopy
+}
+
 type ByZOrder []*Object
 
 func (s ByZOrder) Len() int {

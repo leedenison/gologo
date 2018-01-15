@@ -50,18 +50,35 @@ func UpdateWindowProjection() {
 }
 
 func ClearBackBuffer() {
-    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)    
+    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
 func Render() {
     // Sort the objects by the rendering zorder
-    sort.Sort(ByZOrder(objects))
-    for _, object := range objects {
+    sort.Sort(ByZOrder(rendered))
+    for _, object := range rendered {
         object.Renderer.Animate(object)
         //object.ObjectType.Renderer.DebugRender(object)
         object.Renderer.Render(object)
     }
     windowState.Main.SwapBuffers()
+}
+
+func TagRender(object *Object) {
+    rendered = append(rendered, object)
+}
+
+func UntagRender(object *Object) {
+    for i := 0; i < len(rendered); i++ {
+        if object == rendered[i] {
+            if len(rendered) > 1 {
+                rendered = append(rendered[:i], rendered[i+1:]...)
+            } else {
+                rendered = rendered[0:0]
+            }
+            i--
+        }
+    }
 }
 
 /////////////////////////////////////////////////////////////

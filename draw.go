@@ -12,37 +12,37 @@ func Rectangle(rect Rect, color mgl32.Vec4) *Object {
     meshVertices := []float32 {
         // Bottom left
         rect[0][0] - originX,
-        rect[1][1] - originY,
+        rect[0][1] - originY,
         0.0,
         0.0,
         1.0,
         // Top right
         rect[1][0] - originX,
-        rect[0][1] - originY,
+        rect[1][1] - originY,
         0.0,
         1.0,
         0.0,
         // Top left
         rect[0][0] - originX,
-        rect[0][1] - originY,
+        rect[1][1] - originY,
         0.0,
         0.0,
         0.0,
         // Bottom left
         rect[0][0] - originX,
-        rect[1][1] - originY,
+        rect[0][1] - originY,
         0.0,
         0.0,
         1.0,
         // Bottom right
         rect[1][0] - originX,
-        rect[1][1] - originY,
+        rect[0][1] - originY,
         0.0,
         1.0,
         1.0,
         // Top right
         rect[1][0] - originX,
-        rect[0][1] - originY,
+        rect[1][1] - originY,
         0.0,
         1.0,
         0.0,

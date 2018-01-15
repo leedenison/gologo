@@ -30,7 +30,7 @@ func (t *Template) CreateObject(model mgl32.Mat4) *Object {
     }
 
     if t.Primitive != nil {
-        object.Primitive = t.Primitive.Clone()        
+        object.Primitive = t.Primitive.Clone()
     }
 
     return object

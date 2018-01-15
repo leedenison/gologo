@@ -20,8 +20,6 @@ var DEFAULT_SCALE = mgl32.Ident4()
 
 var apiCallback func(int)
 
-var objects = []*Object {}
-
 /////////////////////////////////////////////////////////////
 // OS globals
 //
@@ -111,6 +109,8 @@ var glState = GLState {
     Textures: map[string]*GLTexture {},
     NextTextureUnit: gl.TEXTURE0,
 }
+
+var rendered = []*Object {}
 
 /////////////////////////////////////////////////////////////
 // Shader program globals

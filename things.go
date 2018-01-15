@@ -201,17 +201,7 @@ func (t *Thing) Delete() {
         return
     }
     UntagAll(t.Object)
-
-    for idx, object := range objects {
-        if object == t.Object {
-            if len(objects) > 1 {
-                objects = append(objects[:idx], objects[idx+1:]...)
-            } else {
-                objects = objects[0:0]
-            }
-        }
-    }
-
+    UntagRender(t.Object)
     delete(objectIndex, t.Object)
     t.Object = nil
 }
@@ -291,7 +281,7 @@ func (sb *ThingBuilder) Build(thingType string) *Thing {
         object.Primitive = InitCircleFromMesh(meshRenderer.MeshVertices)
     }
 
-    objects = append(objects, object)
+    TagRender(object)
 
     for _, tag := range sb.Tags {
         Tag(object, tag)

@@ -40,7 +40,7 @@ func Run() {
     for !windowState.Main.ShouldClose() {
         ClearBackBuffer()
         Tick()
-        
+
         if apiCallback != nil {
             apiCallback(GetTime())
         }
@@ -53,10 +53,6 @@ func Run() {
 
     Info.Println("Exiting.")
     return
-}
-
-func AddObject(object *Object) {
-    objects = append(objects, object)
 }
 
 func GetScreenWidth() int {

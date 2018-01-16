@@ -14,7 +14,7 @@ var lastCallback = int(0)
 func mazeTickCallback(tick int) {
     if tick - lastCallback > DEFAULT_TICK_INCREMENT {
         for _, maze := range callbackMap {
-            if maze.Callback != nil && !maze.HasRemainingMoves() {
+            if maze.Callback != nil && !maze.HasRemainingMoves() && !maze.IsFinished() {
                 maze.Callback(maze)
             }
             maze.DoMove()
@@ -28,7 +28,7 @@ var DEFAULT_SCREEN_SIZE_FACTOR = float32(0.8)
 var DEFAULT_WALL_WIDTH_FACTOR = float32(0.1)
 var DEFAULT_ROOM_BORDER_FACTOR = float32(0.2)
 
-var DEFAULT_TICK_INCREMENT = 750
+var DEFAULT_TICK_INCREMENT = 200
 
 type Maze struct {
     Size [2]int
@@ -42,7 +42,7 @@ type Maze struct {
     PlayerPosition [2]int
     Callback func(*Maze)
     MoveQueue []Direction
-    Move int
+    LastMove int
 }
 
 type Direction int
@@ -53,6 +53,10 @@ const (
     LEFT
     RIGHT
 )
+
+func (maze *Maze) Move(direction Direction) {
+    maze.MoveQueue = append(maze.MoveQueue, direction)
+}
 
 func (maze *Maze) MoveUp() {
     maze.MoveQueue = append(maze.MoveQueue, UP)
@@ -71,44 +75,65 @@ func (maze *Maze) MoveRight() {
 }
 
 func (maze *Maze) HasRemainingMoves() bool {
-    return maze.Move < len(maze.MoveQueue)
+    return maze.LastMove < len(maze.MoveQueue)
+}
+
+func (maze *Maze) IsFinished() bool {
+    return maze.PlayerPosition == maze.End
+}
+
+func (maze *Maze) GetLastMove() Direction {
+    if maze.LastMove == 0 {
+        return UP
+    } else {
+        return maze.MoveQueue[maze.LastMove - 1]
+    }
+}
+
+func (maze *Maze) CanMove(direction Direction) bool {
+    pos := maze.PlayerPosition
+
+    switch direction {
+    case UP:
+        return pos[1] < maze.Size[1] - 1 && maze.HWalls[pos[0]][pos[1]] == nil
+    case DOWN:
+        return pos[1] > 0 && maze.HWalls[pos[0]][pos[1] - 1] == nil
+    case LEFT:
+        return pos[0] > 0 && maze.VWalls[pos[0] - 1][pos[1]] == nil
+    case RIGHT:
+        return pos[0] < maze.Size[0] - 1 && maze.VWalls[pos[0]][pos[1]] == nil
+    default:
+        panic(fmt.Sprintf("Unknown direction: %v\n", direction))
+    }
 }
 
 func (maze *Maze) DoMove() {
     if maze.HasRemainingMoves() {
-        direction := maze.MoveQueue[maze.Move]
-        pos := maze.PlayerPosition
+        direction := maze.MoveQueue[maze.LastMove]
 
-        switch direction {
-        case UP:
-            if pos[1] < maze.Size[1] - 1 && maze.HWalls[pos[0]][pos[1]] == nil {
+        if maze.CanMove(direction) {
+            switch direction {
+            case UP:
                 maze.Player.Model = mgl32.Translate3D(0, maze.RoomSize, 0).
                     Mul4(maze.Player.Model)
                 maze.PlayerPosition[1] += 1
-            }
-        case DOWN:
-            if pos[1] > 0 && maze.HWalls[pos[0]][pos[1] - 1] == nil {
+            case DOWN:
                 maze.Player.Model = mgl32.Translate3D(0, -maze.RoomSize, 0).
                     Mul4(maze.Player.Model)
                 maze.PlayerPosition[1] -= 1
-            }
-        case LEFT:
-            if pos[0] > 0 && maze.VWalls[pos[0] - 1][pos[1]] == nil {
+            case LEFT:
                 maze.Player.Model = mgl32.Translate3D(-maze.RoomSize, 0, 0).
                     Mul4(maze.Player.Model)
                 maze.PlayerPosition[0] -= 1
-            }
-        case RIGHT:
-            if pos[0] < maze.Size[0] - 1 && maze.VWalls[pos[0]][pos[1]] == nil {
+            case RIGHT:
                 maze.Player.Model = mgl32.Translate3D(maze.RoomSize, 0, 0).
                     Mul4(maze.Player.Model)
                 maze.PlayerPosition[0] += 1
+            default:
+                panic(fmt.Sprintf("Unknown direction: %v\n", direction))
             }
-        default:
-            panic(fmt.Sprintf("Unknown direction: %v\n", direction))
         }
-
-        maze.Move++
+        maze.LastMove++
     }
 }
 
@@ -445,5 +470,35 @@ func removeWall(maze *Maze, from [2]int, to [2]int) {
     if from[1] > to[1] {
         gologo.UntagRender(maze.HWalls[to[0]][to[1]])
         maze.HWalls[to[0]][to[1]] = nil
+    }
+}
+
+func Clockwise(direction Direction) Direction {
+    switch direction {
+    case UP:
+        return RIGHT
+    case RIGHT:
+        return DOWN
+    case DOWN:
+        return LEFT
+    case LEFT:
+        return UP
+    default:
+        panic(fmt.Sprintf("Unknown direction: %v\n", direction))
+    }
+}
+
+func AntiClockwise(direction Direction) Direction {
+    switch direction {
+    case UP:
+        return LEFT
+    case LEFT:
+        return DOWN
+    case DOWN:
+        return RIGHT
+    case RIGHT:
+        return UP
+    default:
+        panic(fmt.Sprintf("Unknown direction: %v\n", direction))
     }
 }

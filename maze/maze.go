@@ -39,6 +39,7 @@ type Maze struct {
     BottomLeft [2]float32
     RoomSize float32
     Player *gologo.Object
+    PlayerPosition [2]int
     Callback func(*Maze)
     MoveQueue []Direction
     Move int
@@ -76,20 +77,33 @@ func (maze *Maze) HasRemainingMoves() bool {
 func (maze *Maze) DoMove() {
     if maze.HasRemainingMoves() {
         direction := maze.MoveQueue[maze.Move]
+        pos := maze.PlayerPosition
 
         switch direction {
         case UP:
-            maze.Player.Model = mgl32.Translate3D(0, maze.RoomSize, 0).
-                Mul4(maze.Player.Model)
+            if pos[1] < maze.Size[1] - 1 && maze.HWalls[pos[0]][pos[1]] == nil {
+                maze.Player.Model = mgl32.Translate3D(0, maze.RoomSize, 0).
+                    Mul4(maze.Player.Model)
+                maze.PlayerPosition[1] += 1
+            }
         case DOWN:
-            maze.Player.Model = mgl32.Translate3D(0, -maze.RoomSize, 0).
-                Mul4(maze.Player.Model)
+            if pos[1] > 0 && maze.HWalls[pos[0]][pos[1] - 1] == nil {
+                maze.Player.Model = mgl32.Translate3D(0, -maze.RoomSize, 0).
+                    Mul4(maze.Player.Model)
+                maze.PlayerPosition[1] -= 1
+            }
         case LEFT:
-            maze.Player.Model = mgl32.Translate3D(-maze.RoomSize, 0, 0).
-                Mul4(maze.Player.Model)
+            if pos[0] > 0 && maze.VWalls[pos[0] - 1][pos[1]] == nil {
+                maze.Player.Model = mgl32.Translate3D(-maze.RoomSize, 0, 0).
+                    Mul4(maze.Player.Model)
+                maze.PlayerPosition[0] -= 1
+            }
         case RIGHT:
-            maze.Player.Model = mgl32.Translate3D(maze.RoomSize, 0, 0).
-                Mul4(maze.Player.Model)
+            if pos[0] < maze.Size[0] - 1 && maze.VWalls[pos[0]][pos[1]] == nil {
+                maze.Player.Model = mgl32.Translate3D(maze.RoomSize, 0, 0).
+                    Mul4(maze.Player.Model)
+                maze.PlayerPosition[0] += 1
+            }
         default:
             panic(fmt.Sprintf("Unknown direction: %v\n", direction))
         }
@@ -200,6 +214,7 @@ func initializeMaze(size [2]int) *Maze {
         [2]float32 { result.RoomSize, result.RoomSize / 2 })
 
     result.Player = initializeStart(result)
+    result.PlayerPosition = result.Start
     initializeEnd(result)
 
     return result

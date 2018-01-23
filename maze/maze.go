@@ -14,7 +14,7 @@ var lastCallback = int(0)
 func mazeTickCallback(tick int) {
     if tick - lastCallback > DEFAULT_TICK_INCREMENT {
         for _, maze := range callbackMap {
-            if maze.Callback != nil && !maze.HasRemainingMoves() && !maze.IsFinished() {
+            if maze.Callback != nil && !HasRemainingMoves(maze) && !IsFinished(maze) {
                 maze.Callback(maze)
             }
             maze.DoMove()
@@ -54,35 +54,43 @@ const (
     RIGHT
 )
 
-func (maze *Maze) Move(direction Direction) {
+func Move(maze *Maze, direction Direction) {
     maze.MoveQueue = append(maze.MoveQueue, direction)
 }
 
-func (maze *Maze) MoveUp() {
+// Moves the player one square up.  Will not move the player if there is a wall
+// above the player.
+func MoveUp(maze *Maze) {
     maze.MoveQueue = append(maze.MoveQueue, UP)
 }
 
-func (maze *Maze) MoveDown() {
+// Moves the player one square down.  Will not move the player if there is a wall
+// below the player.
+func MoveDown(maze *Maze) {
     maze.MoveQueue = append(maze.MoveQueue, DOWN)
 }
 
-func (maze *Maze) MoveLeft() {
+// Moves the player one square to the left.  Will not move the player if there is a wall
+// to the left.
+func MoveLeft(maze *Maze) {
     maze.MoveQueue = append(maze.MoveQueue, LEFT)
 }
 
-func (maze *Maze) MoveRight() {
+// Moves the player one square to the right.  Will not move the player if there is a wall
+// to the right.
+func MoveRight(maze *Maze) {
     maze.MoveQueue = append(maze.MoveQueue, RIGHT)
 }
 
-func (maze *Maze) HasRemainingMoves() bool {
+func HasRemainingMoves(maze *Maze) bool {
     return maze.LastMove < len(maze.MoveQueue)
 }
 
-func (maze *Maze) IsFinished() bool {
+func IsFinished(maze *Maze) bool {
     return maze.PlayerPosition == maze.End
 }
 
-func (maze *Maze) GetLastMove() Direction {
+func GetLastMove(maze *Maze) Direction {
     if maze.LastMove == 0 {
         return UP
     } else {
@@ -90,7 +98,7 @@ func (maze *Maze) GetLastMove() Direction {
     }
 }
 
-func (maze *Maze) CanMove(direction Direction) bool {
+func CanMove(maze *Maze, direction Direction) bool {
     pos := maze.PlayerPosition
 
     switch direction {
@@ -108,10 +116,10 @@ func (maze *Maze) CanMove(direction Direction) bool {
 }
 
 func (maze *Maze) DoMove() {
-    if maze.HasRemainingMoves() {
+    if HasRemainingMoves(maze) {
         direction := maze.MoveQueue[maze.LastMove]
 
-        if maze.CanMove(direction) {
+        if CanMove(maze, direction) {
             switch direction {
             case UP:
                 maze.Player.Model = mgl32.Translate3D(0, maze.RoomSize, 0).
@@ -498,6 +506,21 @@ func AntiClockwise(direction Direction) Direction {
         return RIGHT
     case RIGHT:
         return UP
+    default:
+        panic(fmt.Sprintf("Unknown direction: %v\n", direction))
+    }
+}
+
+func Opposite(direction Direction) Direction {
+    switch direction {
+    case UP:
+        return DOWN
+    case LEFT:
+        return RIGHT
+    case DOWN:
+        return UP
+    case RIGHT:
+        return LEFT
     default:
         panic(fmt.Sprintf("Unknown direction: %v\n", direction))
     }

@@ -254,31 +254,6 @@ func createMeshBuffer(shader uint32, vertices []float32) uint32 {
 }
 
 /////////////////////////////////////////////////////////////
-// TextureRenderer
-//
-
-func CreateTextureRenderer(
-        vertexShader string,
-        fragmentShader string,
-        texture *GLTexture,
-        uniforms []int,
-        uniformValues map[int]interface{},
-        meshVertices []float32) (*MeshRenderer, error) {
-    if uniformValues == nil {
-        uniformValues = map[int]interface{}{}
-    }
-
-    uniformValues[UNIFORM_TEXTURE] = texture
-
-    if !containsInt(uniforms, UNIFORM_TEXTURE) {
-        uniforms = append(uniforms, UNIFORM_TEXTURE)
-    }
-
-    return CreateMeshRenderer(
-        vertexShader, fragmentShader, uniforms, uniformValues, meshVertices)
-}
-
-/////////////////////////////////////////////////////////////
 // TextRenderer
 //
 

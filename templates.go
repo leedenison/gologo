@@ -111,6 +111,7 @@ func RegisterPhysicsConfig(name string, physicsType reflect.Type) {
 
 func loadConfigs(resourceDir string) error {
     files, err := ioutil.ReadDir(resourceDir)
+
     if err != nil {
         return errors.Wrap(err, "Failed to load resources.")
     }
@@ -205,39 +206,30 @@ func (config *CircleConfig) Create() (Primitive, error) {
 type MeshRendererConfig struct {
     VertexShader string
     FragmentShader string
-    MeshVertices []float32
-}
-
-type TextureRendererConfig struct {
-    VertexShader string
-    FragmentShader string
+    Color mgl32.Vec4
     Texture string
     MeshVertices []float32
 }
 
 func (config *MeshRendererConfig) Create() (Renderer, error) {
-    err := validateMeshRenderConfig(
-        config.VertexShader, config.FragmentShader, config.MeshVertices)
-    if err != nil {
-        return nil, err
-    }
-
-    return CreateMeshRenderer(
-        config.VertexShader,
-        config.FragmentShader,
-        []int {},
-        map[int]interface{}{},
-        config.MeshVertices)
-}
-
-func (config *TextureRendererConfig) Create() (Renderer, error) {
-    var texture *GLTexture
     var err error
+    uniformValues := map[int]interface{}{}
+
+    var uniforms []int
+
     if config.Texture != "" {
-        texture, err = CreateTexture(config.Texture)
+        uniforms = append(uniforms, UNIFORM_TEXTURE)
+        uniformValues[UNIFORM_TEXTURE], err = CreateTexture(config.Texture)
         if err != nil {
             return nil, err
         }
+    }
+
+    // TODO: Should this be elsif - which order with texture?
+    // TODO: deal with the fact that Vec4 always has a 4 length value and 0,0,0,0 is valid
+    if len(config.Color) > 0 {
+        uniforms = append(uniforms, UNIFORM_COLOR)
+        uniformValues[UNIFORM_COLOR] = config.Color
     }
 
     err = validateMeshRenderConfig(
@@ -246,12 +238,11 @@ func (config *TextureRendererConfig) Create() (Renderer, error) {
         return nil, err
     }
 
-    return CreateTextureRenderer(
+    return CreateMeshRenderer(
         config.VertexShader,
         config.FragmentShader,
-        texture,
-        []int {},
-        map[int]interface{}{},
+        uniforms,
+        uniformValues,
         config.MeshVertices)
 }
 
@@ -291,14 +282,18 @@ type SpriteRendererConfig struct {
 }
 
 func (config *SpriteRendererConfig) Create() (Renderer, error) {
+    uniformValues := map[int]interface{}{}
+
     if config.Texture == "" {
         return nil, errors.New("Missing required field 'Texture'.")
     }
 
+    uniform := []int { UNIFORM_TEXTURE }
     texture, err := CreateTexture(config.Texture)
     if err != nil {
         return nil, err
     }
+    uniformValues[UNIFORM_TEXTURE] = texture
 
     meshVertices := CalcMeshFromSprite(
         float32(config.TextureOrigin[0]),
@@ -307,12 +302,11 @@ func (config *SpriteRendererConfig) Create() (Renderer, error) {
         float32(texture.Size[1]),
         config.MeshScaling)
 
-    return CreateTextureRenderer(
+    return CreateMeshRenderer(
         config.VertexShader,
         config.FragmentShader,
-        texture,
-        []int {},
-        map[int]interface{}{},
+        uniform,
+        uniformValues,
         meshVertices)
 }
 
@@ -376,6 +370,10 @@ type CharRendererConfig struct {
 }
 
 func (config *TextRendererConfig) Create() (Renderer, error) {
+    uniformValues := map[int]interface{}{}
+
+    uniform := []int { UNIFORM_TEXTURE }
+
     result := TextRenderer {
         CharWidths: map[byte]float32 {},
         MeshRenderers: map[byte]*MeshRenderer {},
@@ -394,6 +392,7 @@ func (config *TextRendererConfig) Create() (Renderer, error) {
         if err != nil {
             return nil, err
         }
+        uniformValues[UNIFORM_TEXTURE] = texture
 
         charWidth := charConfig.CharRect[1][0] - charConfig.CharRect[0][0]
         meshVertices := CalcMeshFromChar(
@@ -402,12 +401,11 @@ func (config *TextRendererConfig) Create() (Renderer, error) {
             charConfig.TextureRect,
             charConfig.CharRect)
 
-        meshRenderer, err := CreateTextureRenderer(
+        meshRenderer, err := CreateMeshRenderer(
             charConfig.VertexShader,
             charConfig.FragmentShader,
-            texture,
-            []int {},
-            map[int]interface{}{},
+            uniform,
+            uniformValues,
             meshVertices)
         if err != nil {
             return nil, err
@@ -427,23 +425,27 @@ func (config *TextRendererConfig) Create() (Renderer, error) {
 type ExplosionRendererConfig struct {
     ParticleCount int
     MaxAge float32
-    MeshRenderers []TextureRendererConfig
+    MeshRenderers []MeshRendererConfig
 }
 
 func (config *ExplosionRendererConfig) Create() (Renderer, error) {
+    var err error
     meshRenderers := []*MeshRenderer {}
+    uniformValues := map[int]interface{}{}
+
+    uniform := []int { UNIFORM_ALPHA, UNIFORM_TEXTURE }
+
     for _, meshRendererConfig := range config.MeshRenderers {
-        texture, err := CreateTexture(meshRendererConfig.Texture)
+        uniformValues[UNIFORM_TEXTURE], err = CreateTexture(meshRendererConfig.Texture)
         if err != nil {
             return nil, err
         }
 
-        meshRenderer, err := CreateTextureRenderer(
+        meshRenderer, err := CreateMeshRenderer(
             meshRendererConfig.VertexShader,
             meshRendererConfig.FragmentShader,
-            texture,
-            []int { UNIFORM_ALPHA },
-            map[int]interface{}{},
+            uniform,
+            uniformValues,
             meshRendererConfig.MeshVertices)
         if err != nil {
             return nil, err

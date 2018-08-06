@@ -87,7 +87,6 @@ var templates = map[string]*Template {}
 
 var rendererTypes = map[string]reflect.Type {
     "MESH_RENDERER": reflect.TypeOf(MeshRendererConfig {}),
-    "TEXTURE_RENDERER": reflect.TypeOf(TextureRendererConfig {}),
     "SPRITE_RENDERER": reflect.TypeOf(SpriteRendererConfig {}),
     "TEXT_RENDERER": reflect.TypeOf(TextRendererConfig {}),
     "EXPLOSION_RENDERER": reflect.TypeOf(ExplosionRendererConfig {}),

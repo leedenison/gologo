@@ -93,7 +93,9 @@ func KeyCallback(
         scancode int,
         action glfw.Action,
         mods glfw.ModifierKey) {
-    if keyPressedCallback != nil && action == glfw.Press {
+    if action == glfw.Press && key == glfw.KeyEscape {
+        window.SetShouldClose(true)
+    } else if keyPressedCallback != nil && action == glfw.Press {
         keyPressedCallback(GetTickTime(), Key(key))
     } else if keyReleasedCallback != nil && action == glfw.Release {
         keyReleasedCallback(GetTickTime(), Key(key))

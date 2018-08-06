@@ -1,165 +1,166 @@
 package gologo
 
 import (
-    "os"
-    "fmt"
-    "github.com/go-gl/mathgl/mgl32"
-    "github.com/go-gl/gl/v4.1-core/gl"
-    "image"
-    "image/draw"
-    _ "image/png"
-    "strings"
+	"fmt"
+	"image"
+	"image/draw"
+	_ "image/png"
+	"os"
+	"strings"
+
+	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 type GLState struct {
-    Shaders map[string]*GLShader
-    Textures map[string]*GLTexture
-    NextTextureUnit int32
-    Projection mgl32.Mat4
+	Shaders         map[string]*GLShader
+	Textures        map[string]*GLTexture
+	NextTextureUnit int32
+	Projection      mgl32.Mat4
 }
 
 type GLTexture struct {
-    ID uint32
-    Size [2]uint32
+	ID   uint32
+	Size [2]uint32
 }
 
 type GLShader struct {
-    Program uint32
-    Projection int32
-    Model int32
-    Uniforms map[int]int32
+	Program    uint32
+	Projection int32
+	Model      int32
+	Uniforms   map[int]int32
 }
 
 func CreateTexture(texturePath string) (*GLTexture, error) {
-    result, textureExists := glState.Textures[texturePath]
-    if !textureExists {
-        texture, sizeX, sizeY, err := loadTexture(
-            executablePath + PATH_SEPARATOR + texturePath,
-            gl.TEXTURE0)
-        if err != nil {
-            return nil, err
-        }
-        result = &GLTexture {
-            ID: texture,
-            Size: [2]uint32 { sizeX, sizeY },
-        }
-        glState.Textures[texturePath] = result
-    }
+	result, textureExists := glState.Textures[texturePath]
+	if !textureExists {
+		texture, sizeX, sizeY, err := loadTexture(
+			executablePath+PATH_SEPARATOR+texturePath,
+			gl.TEXTURE0)
+		if err != nil {
+			return nil, err
+		}
+		result = &GLTexture{
+			ID:   texture,
+			Size: [2]uint32{sizeX, sizeY},
+		}
+		glState.Textures[texturePath] = result
+	}
 
-    return result, nil
+	return result, nil
 }
 
 func loadTexture(file string, textureUnit uint32) (uint32, uint32, uint32, error) {
-    imgFile, err := os.Open(file)
-    if err != nil {
-        return 0, 0, 0, fmt.Errorf("Failed to load texture %q: %v", file, err)
-    }
-    img, _, err := image.Decode(imgFile)
-    if err != nil {
-        return 0, 0, 0, err
-    }
+	imgFile, err := os.Open(file)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("Failed to load texture %q: %v", file, err)
+	}
+	img, _, err := image.Decode(imgFile)
+	if err != nil {
+		return 0, 0, 0, err
+	}
 
-    rgba := image.NewRGBA(img.Bounds())
-    if rgba.Stride != rgba.Rect.Size().X*4 {
-        return 0, 0, 0, fmt.Errorf("Unsupported image stride")
-    }
-    draw.Draw(rgba, rgba.Bounds(), image.Transparent, image.ZP, draw.Src)
-    draw.Draw(rgba, rgba.Bounds(), img, image.ZP, draw.Over)
+	rgba := image.NewRGBA(img.Bounds())
+	if rgba.Stride != rgba.Rect.Size().X*4 {
+		return 0, 0, 0, fmt.Errorf("Unsupported image stride")
+	}
+	draw.Draw(rgba, rgba.Bounds(), image.Transparent, image.ZP, draw.Src)
+	draw.Draw(rgba, rgba.Bounds(), img, image.ZP, draw.Over)
 
-    var texture uint32
-    gl.GenTextures(1, &texture)
-    gl.ActiveTexture(textureUnit)
-    gl.BindTexture(gl.TEXTURE_2D, texture)
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-    gl.TexImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        int32(rgba.Rect.Size().X),
-        int32(rgba.Rect.Size().Y),
-        0,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        gl.Ptr(rgba.Pix))
+	var texture uint32
+	gl.GenTextures(1, &texture)
+	gl.ActiveTexture(textureUnit)
+	gl.BindTexture(gl.TEXTURE_2D, texture)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TexImage2D(
+		gl.TEXTURE_2D,
+		0,
+		gl.RGBA,
+		int32(rgba.Rect.Size().X),
+		int32(rgba.Rect.Size().Y),
+		0,
+		gl.RGBA,
+		gl.UNSIGNED_BYTE,
+		gl.Ptr(rgba.Pix))
 
-    return texture, uint32(rgba.Rect.Size().X), uint32(rgba.Rect.Size().Y), nil
+	return texture, uint32(rgba.Rect.Size().X), uint32(rgba.Rect.Size().Y), nil
 }
 
 func CreateShaderProgram(vertexShader string, fragmentShader string) (*GLShader, error) {
-    programKey := vertexShader + "," + fragmentShader
-    program, programExists := glState.Shaders[programKey]
-    if !programExists {
-        var err error
-        program, err = loadProgram(SHADERS[vertexShader], SHADERS[fragmentShader])
-        if err != nil {
-            return nil, err
-        }
-        glState.Shaders[programKey] = program
-    }
+	programKey := vertexShader + "," + fragmentShader
+	program, programExists := glState.Shaders[programKey]
+	if !programExists {
+		var err error
+		program, err = loadProgram(SHADERS[vertexShader], SHADERS[fragmentShader])
+		if err != nil {
+			return nil, err
+		}
+		glState.Shaders[programKey] = program
+	}
 
-    return program, nil
+	return program, nil
 }
 
 func loadProgram(vertexShaderSource, fragmentShaderSource string) (*GLShader, error) {
-    vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
-    if err != nil {
-        return nil, err
-    }
+	vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+	if err != nil {
+		return nil, err
+	}
 
-    fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
-    if err != nil {
-        return nil, err
-    }
+	fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+	if err != nil {
+		return nil, err
+	}
 
-    program := gl.CreateProgram()
+	program := gl.CreateProgram()
 
-    gl.AttachShader(program, vertexShader)
-    gl.AttachShader(program, fragmentShader)
-    gl.LinkProgram(program)
+	gl.AttachShader(program, vertexShader)
+	gl.AttachShader(program, fragmentShader)
+	gl.LinkProgram(program)
 
-    var status int32
-    gl.GetProgramiv(program, gl.LINK_STATUS, &status)
-    if status == gl.FALSE {
-        var logLength int32
-        gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
+	var status int32
+	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
+	if status == gl.FALSE {
+		var logLength int32
+		gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
 
-        log := strings.Repeat("\x00", int(logLength+1))
-        gl.GetProgramInfoLog(program, logLength, nil, gl.Str(log))
+		log := strings.Repeat("\x00", int(logLength+1))
+		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(log))
 
-        return nil, fmt.Errorf("failed to link program: %v", log)
-    }
+		return nil, fmt.Errorf("failed to link program: %v", log)
+	}
 
-    gl.DeleteShader(vertexShader)
-    gl.DeleteShader(fragmentShader)
+	gl.DeleteShader(vertexShader)
+	gl.DeleteShader(fragmentShader)
 
-    return &GLShader {
-        Program: program,
-        Uniforms: map[int]int32 {},
-    }, nil
+	return &GLShader{
+		Program:  program,
+		Uniforms: map[int]int32{},
+	}, nil
 }
 
 func compileShader(source string, shaderType uint32) (uint32, error) {
-    shader := gl.CreateShader(shaderType)
+	shader := gl.CreateShader(shaderType)
 
-    csources, free := gl.Strs(source)
-    gl.ShaderSource(shader, 1, csources, nil)
-    free()
-    gl.CompileShader(shader)
+	csources, free := gl.Strs(source)
+	gl.ShaderSource(shader, 1, csources, nil)
+	free()
+	gl.CompileShader(shader)
 
-    var status int32
-    gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
-    if status == gl.FALSE {
-        var logLength int32
-        gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
+	var status int32
+	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
+	if status == gl.FALSE {
+		var logLength int32
+		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
 
-        log := strings.Repeat("\x00", int(logLength+1))
-        gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
+		log := strings.Repeat("\x00", int(logLength+1))
+		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
 
-        return 0, fmt.Errorf("failed to compile %v: %v", log, source)
-    }
+		return 0, fmt.Errorf("failed to compile %v: %v", log, source)
+	}
 
-    return shader, nil
+	return shader, nil
 }

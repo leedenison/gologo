@@ -1,103 +1,104 @@
 package gologo
 
 import (
-    "os"
-    "runtime"
-    "github.com/go-gl/glfw/v3.2/glfw"
+	"os"
+	"runtime"
+
+	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
 func init() {
-    // Make sure main thread is locked so that OpenGL calls
-    // are always made from the same thread.
-    runtime.LockOSThread()
+	// Make sure main thread is locked so that OpenGL calls
+	// are always made from the same thread.
+	runtime.LockOSThread()
 }
 
 func Init() {
-    // Use ioutil.Discard to disable
-    InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
+	// Use ioutil.Discard to disable
+	InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
 
-    if err := InitWindow(); err != nil {
-        Error.Fatalln("window.Init failed:", err)
-    }
+	if err := InitWindow(); err != nil {
+		Error.Fatalln("window.Init failed:", err)
+	}
 
-    if err := CreateWindow(TITLE); err != nil {
-        Error.Fatalln("window.CreateWindow failed:", err)
-    }
+	if err := CreateWindow(TITLE); err != nil {
+		Error.Fatalln("window.CreateWindow failed:", err)
+	}
 
-    UpdateWindowProjection()
+	UpdateWindowProjection()
 
-    if err := InitRender(); err != nil {
-        Error.Fatalln("render.Init failed:", err)
-    }
+	if err := InitRender(); err != nil {
+		Error.Fatalln("render.Init failed:", err)
+	}
 
-    if err := InitTick(); err != nil {
-        Error.Fatalln("physics.Init failed:", err)
-    }
+	if err := InitTick(); err != nil {
+		Error.Fatalln("physics.Init failed:", err)
+	}
 }
 
 func Run() {
-    // TODO: Add close action for quit key pressed
-    for !windowState.Main.ShouldClose() {
-        ClearBackBuffer()
-        Tick()
+	// TODO: Add close action for quit key pressed
+	for !windowState.Main.ShouldClose() {
+		ClearBackBuffer()
+		Tick()
 
-        if apiCallback != nil {
-            apiCallback(GetTime())
-        }
+		if apiCallback != nil {
+			apiCallback(GetTime())
+		}
 
-        ResolveContacts(GenerateContacts())
-        Render()
+		ResolveContacts(GenerateContacts())
+		Render()
 
-        glfw.PollEvents()
-    }
+		glfw.PollEvents()
+	}
 
-    Info.Println("Exiting.")
-    return
+	Info.Println("Exiting.")
+	return
 }
 
 func GetScreenWidth() int {
-    return int(windowState.Width)
+	return int(windowState.Width)
 }
 
 func GetScreenHeight() int {
-    return int(windowState.Height)
+	return int(windowState.Height)
 }
 
 func SetTickFunction(f func(int)) {
-    apiCallback = f
+	apiCallback = f
 }
 
 func SetKeyPressedFunction(f func(int, Key)) {
-    keyPressedCallback = f
+	keyPressedCallback = f
 }
 
 func SetKeyReleasedFunction(f func(int, Key)) {
-    keyReleasedCallback = f
+	keyReleasedCallback = f
 }
 
 func IsPressed(key Key) bool {
-    state := windowState.Main.GetKey(glfw.Key(key))
-    return state == glfw.Press
+	state := windowState.Main.GetKey(glfw.Key(key))
+	return state == glfw.Press
 }
 
 func CreateTaggedContactGenerator(
-        tag1 string,
-        tag2 string,
-        penetration PenetrationResolver,
-        post PostContactResolver) {
-    contactGenerators = append(contactGenerators,
-        &TaggedContactGenerator {
-            SourceTag: tag1,
-            TargetTag: tag2,
-            PenetrationResolver: penetration,
-            PostContactResolver: post,
-        })
+	tag1 string,
+	tag2 string,
+	penetration PenetrationResolver,
+	post PostContactResolver) {
+	contactGenerators = append(contactGenerators,
+		&TaggedContactGenerator{
+			SourceTag:           tag1,
+			TargetTag:           tag2,
+			PenetrationResolver: penetration,
+			PostContactResolver: post,
+		})
 }
 
 func SetScreenEdgeTag(tag string) {
-    contactGenerators = append(contactGenerators,
-        &ScreenEdgeContactGenerator {
-            Tag: tag,
-            PenetrationResolver: &PerpendicularPenetrationResolver {},
-        })
+	contactGenerators = append(contactGenerators,
+		&ScreenEdgeContactGenerator{
+			Tag:                 tag,
+			PenetrationResolver: &PerpendicularPenetrationResolver{},
+		})
 }

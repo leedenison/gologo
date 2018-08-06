@@ -383,7 +383,7 @@ func (config *TextRendererConfig) Create() (Renderer, error) {
 		bytes := []byte(char)
 
 		if len(bytes) != 1 {
-			Trace.Println("Ignoring multibyte character '%v'\n", char)
+			Trace.Printf("Ignoring multibyte character '%v'\n", char)
 			continue
 		}
 

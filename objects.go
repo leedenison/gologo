@@ -2,6 +2,7 @@ package gologo
 
 import (
 	"errors"
+	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -21,6 +22,11 @@ func CreateObject(model mgl32.Mat4) *Object {
 		Model:    model,
 		Creation: GetTickTime(),
 	}
+}
+
+// GetModel : Returns the model for this object
+func (o *Object) GetModel() mgl32.Mat4 {
+	return o.Model
 }
 
 // GetAge : Returns age of object since creation
@@ -48,6 +54,22 @@ func (o *Object) SetPositionVec2(p mgl32.Vec2) {
 // as an integer compared with other objects
 func (o *Object) SetZOrder(z int) {
 	o.ZOrder = z
+}
+
+func (o *Object) Direction() float64 {
+	return math.Atan2(float64(o.Model.At(1, 1)), float64(o.Model.At(0, 1))) - math.Pi/2
+}
+
+func (o *Object) DirectionOf(other *Object) float64 {
+	direction := other.Model.Col(3).Vec3().Sub(o.Model.Col(3).Vec3())
+
+	return math.Atan2(float64(direction[1]), float64(direction[0])) - math.Pi/2
+}
+
+func (o *Object) Rotate(angle float32) {
+	rotation := mgl32.HomogRotate3DZ(angle)
+
+	o.Model = o.Model.Mul4(rotation)
 }
 
 // GetRenderer : Returns the renderer for this object

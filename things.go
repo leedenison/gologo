@@ -2,7 +2,6 @@ package gologo
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -146,6 +145,7 @@ func (t *Thing) MoveRight(amount int) {
 	if t.Object == nil {
 		return
 	}
+
 	right := t.Object.Model.Col(0).Vec3().Normalize()
 	t.Object.Model = mgl32.Translate3D(
 		right.X()*float32(amount),
@@ -155,51 +155,50 @@ func (t *Thing) MoveRight(amount int) {
 }
 
 func (t *Thing) TurnClockwise(angle int) {
-	rotation := mgl32.HomogRotate3DZ(
-		mgl32.DegToRad(float32(angle)))
+	if t.Object == nil {
+		return
+	}
 
-	t.Object.Model = t.Object.Model.Mul4(rotation)
+	t.Object.Rotate(float32(angle))
 }
 
 func (t *Thing) TurnAntiClockwise(angle int) {
-	rotation := mgl32.HomogRotate3DZ(
-		mgl32.DegToRad(float32(-angle)))
+	if t.Object == nil {
+		return
+	}
 
-	t.Object.Model = t.Object.Model.Mul4(rotation)
+	t.Object.Rotate(float32(-angle))
 }
 
 func (t *Thing) Direction() int {
-	angle := math.Atan2(float64(t.Object.Model.At(1, 1)), float64(t.Object.Model.At(0, 1))) - math.Pi/2
-
-	if angle <= -0 {
-		return int(mgl32.RadToDeg(float32(angle + 2*math.Pi)))
-	} else {
-		return int(mgl32.RadToDeg(float32(angle)))
+	if t.Object == nil {
+		return 0
 	}
+	angle := t.Object.Direction()
+
+	return radToNearestDeg(angle)
 }
 
 func (t *Thing) DirectionOf(other *Thing) int {
-	direction := other.Object.Model.Col(3).Vec3().Sub(t.Object.Model.Col(3).Vec3())
-	angle := math.Atan2(float64(direction[1]), float64(direction[0])) - math.Pi/2
-
-	if angle <= -0 {
-		return int(mgl32.RadToDeg(float32(angle + 2*math.Pi)))
-	} else {
-		return int(mgl32.RadToDeg(float32(angle)))
+	if t.Object == nil || other.Object == nil {
+		return 0
 	}
+	angle := t.Object.DirectionOf(other.Object)
+
+	return radToNearestDeg(angle)
 }
 
 func (t *Thing) IsOnScreen() bool {
 	if t.Object == nil {
 		return false
 	}
-	switch primitive := t.Object.Primitive.(type) {
+	switch primitive := t.Object.GetPrimitive().(type) {
 	case nil:
-		return OriginIsOnScreen(t.Object.Model)
+		return OriginIsOnScreen(t.Object.GetModel())
 	case *Circle:
-		return CircleIsOnScreen(primitive, t.Object.Model)
+		return CircleIsOnScreen(primitive, t.Object.GetModel())
 	default:
-		panic(fmt.Sprintf("Unhandled primitive type: %t\n", t.Object.Primitive))
+		panic(fmt.Sprintf("Unhandled primitive type: %t\n", t.Object.GetPrimitive()))
 	}
 }
 
@@ -275,14 +274,11 @@ func (sb *ThingBuilder) AddTag(tag string) *ThingBuilder {
 func (sb *ThingBuilder) Build(thingType string) *Thing {
 	model := sb.Position.Mul4(sb.Orientation.Mul4(sb.RenderScale))
 
-	Info.Printf("config is: (%+v)", sb.Config)
 	object, err := CreateTemplateObject(thingType, model)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create object: %v\n", err))
 	}
 	object.SetZOrder(sb.ZOrder)
-
-	Info.Printf("object primitive is: (%+v)", object.Primitive)
 
 	TagRender(object)
 
@@ -350,7 +346,7 @@ func (t *ThingList) Contains(thing *Thing) bool {
 
 func (sb *ThingBuilder) BuildText(text string) *Thing {
 	thing := sb.Build("TEXT")
-	renderer := thing.Object.Renderer
+	renderer := thing.Object.GetRenderer()
 
 	textRenderer, ok := renderer.(*TextRenderer)
 	if !ok {

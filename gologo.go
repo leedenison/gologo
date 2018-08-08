@@ -52,7 +52,7 @@ func Run() {
 		glfw.PollEvents()
 	}
 
-	Info.Println("Exiting.")
+	Trace.Println("Exiting.")
 	return
 }
 

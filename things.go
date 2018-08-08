@@ -62,39 +62,48 @@ type Thing struct {
 	Object *Object
 }
 
+// GetAge : Returns age of Thing's object since creation
 func (t *Thing) GetAge() int {
 	if t.Object == nil {
 		return 0
 	}
-	return GetTickTime() - t.Object.Creation
+	return t.Object.GetAge()
 }
 
+// GetPosition : Returns X and Y co-ords of Thing's object centre in 2D
 func (t *Thing) GetPosition() (int, int) {
 	if t.Object == nil {
 		return 0, 0
 	}
-	return int(t.Object.Model.Col(3).X()), int(t.Object.Model.Col(3).Y())
+	x, y := t.Object.GetPosition()
+
+	return int(x), int(y)
 }
 
+// SetPosition : Sets X and Y co-ords of Thing's object centre in 2D
 func (t *Thing) SetPosition(x int, y int) {
 	if t.Object == nil {
 		return
 	}
-	t.Object.Model.SetCol(3, mgl32.Vec4{float32(x), float32(y), 0.0, 1.0})
+	t.Object.SetPosition(float32(x), float32(y))
 }
 
+// SetPositionVec2 : Sets X and Y co-ords of Thing's object centre
+// in 2D using a vector of 2 elements
 func (t *Thing) SetPositionVec2(p mgl32.Vec2) {
 	if t.Object == nil {
 		return
 	}
-	t.Object.Model.SetCol(3, p.Vec4(0.0, 1.0))
+	t.Object.SetPositionVec2(p)
 }
 
+// SetZOrder : Sets the height of Thing's object in 3D space
+// as an integer compared with other objects
 func (t *Thing) SetZOrder(z int) {
 	if t.Object == nil {
 		return
 	}
-	t.Object.ZOrder = z
+	t.Object.SetZOrder(z)
 }
 
 func (t *Thing) MoveForward(amount int) {
@@ -266,18 +275,14 @@ func (sb *ThingBuilder) AddTag(tag string) *ThingBuilder {
 func (sb *ThingBuilder) Build(thingType string) *Thing {
 	model := sb.Position.Mul4(sb.Orientation.Mul4(sb.RenderScale))
 
-	template, ok := templates[thingType]
-	if !ok {
-		panic(fmt.Sprintf("Invalid object template: %v\n", thingType))
+	Info.Printf("config is: (%+v)", sb.Config)
+	object, err := CreateTemplateObject(thingType, model)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create object: %v\n", err))
 	}
+	object.SetZOrder(sb.ZOrder)
 
-	object := template.CreateObject(model)
-	object.ZOrder = sb.ZOrder
-
-	meshRenderer, ok := object.Renderer.(*MeshRenderer)
-	if object.Primitive == nil && ok {
-		object.Primitive = InitCircleFromMesh(meshRenderer.MeshVertices)
-	}
+	Info.Printf("object primitive is: (%+v)", object.Primitive)
 
 	TagRender(object)
 

@@ -21,20 +21,23 @@ type Template struct {
 	CloneRenderer bool
 }
 
-func (t *Template) CreateObject(model mgl32.Mat4) *Object {
+func CreateTemplateObject(templateType string, model mgl32.Mat4) (*Object, error) {
+	template, ok := templates[templateType]
+	if !ok {
+		return nil, errors.Errorf("invalid object template: %v", templateType)
+	}
+
 	object := CreateObject(model)
+	object.SetRenderer(template.Renderer, template.CloneRenderer)
 
-	if t.CloneRenderer {
-		object.Renderer = t.Renderer.Clone()
-	} else {
-		object.Renderer = t.Renderer
+	if template.Primitive != nil {
+		object.SetPrimitive(template.Primitive, true)
+		//	Implement this when the loadConfig has been implemented
+		//	} else if template.PhysicsPrimitiveType == "DEFAULT" {
+		//		object.SetDefaultPrimitive()
 	}
 
-	if t.Primitive != nil {
-		object.Primitive = t.Primitive.Clone()
-	}
-
-	return object
+	return object, nil
 }
 
 func LoadObjectTemplates() {
@@ -165,17 +168,26 @@ func loadConfig(resourcePath string) (*TemplateConfig, error) {
 		return nil, errors.Errorf("Unknown RenderType: %v\n", parseResult.RendererType)
 	}
 
+	// Create primitive config only if there is a PhysicsPrimitiveType set i.e. not "" or NONE, and
+	// the PhysicsPrimitive is Set. If the PhysicsPrimitive isn't set, if the type is DEFAULT then we
+	// can build the default, if it isn't CIRCLE then throw error
 	if parseResult.PhysicsPrimitiveType != "" && parseResult.PhysicsPrimitiveType != "NONE" {
-		if physicsType, exists := physicsTypes[parseResult.PhysicsPrimitiveType]; exists {
-			untypedConfig := reflect.New(physicsType).Elem().Addr().Interface()
-			physicsConfig := untypedConfig.(PhysicsPrimitiveConfig)
-			err = json.Unmarshal(parseResult.PhysicsPrimitive, &physicsConfig)
-			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
+		if parseResult.PhysicsPrimitive != nil {
+			if physicsType, exists := physicsTypes[parseResult.PhysicsPrimitiveType]; exists {
+				untypedConfig := reflect.New(physicsType).Elem().Addr().Interface()
+				physicsConfig := untypedConfig.(PhysicsPrimitiveConfig)
+				err = json.Unmarshal(parseResult.PhysicsPrimitive, &physicsConfig)
+				if err != nil {
+					return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
+				}
+				parseResult.PhysicsPrimitiveConfig = physicsConfig
+			} else {
+				return nil, errors.Errorf("Unknown PhysicsPrimitiveType: %v\n", parseResult.PhysicsPrimitiveType)
 			}
-			parseResult.PhysicsPrimitiveConfig = physicsConfig
+		} else if parseResult.PhysicsPrimitiveType == "CIRCLE" {
+			// Handle creating a default config - to be implemented in CreateTemplateObject
 		} else {
-			return nil, errors.Errorf("Unknown PhysicsPrimitiveType: %v\n", parseResult.PhysicsPrimitiveType)
+			return nil, errors.Errorf("PrimitiveType is not DEFAULT and provides no Primitive", parseResult.Name)
 		}
 	}
 

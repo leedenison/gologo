@@ -35,6 +35,7 @@ func (t *ThingPostContactResolver) ResolveContact(contact *Contact) {
 	t.Callback(thing1, thing2)
 }
 
+// ShowAllThings : Displays every template object on screen side by side
 func ShowAllThings(prefix string) {
 	objectSpace := 100
 	objectsPerRow := (DEFAULT_WIN_SIZE_X / objectSpace) - 1
@@ -57,11 +58,13 @@ func ShowAllThings(prefix string) {
 // Things
 //
 
+// Thing : Wrapper around Object with extra convenience functions
+// and simplifications
 type Thing struct {
 	Object *Object
 }
 
-// GetAge : Returns age of Thing's object since creation
+// GetAge : Returns age of Thing since creation
 func (t *Thing) GetAge() int {
 	if t.Object == nil {
 		return 0
@@ -69,7 +72,7 @@ func (t *Thing) GetAge() int {
 	return t.Object.GetAge()
 }
 
-// GetPosition : Returns X and Y co-ords of Thing's object centre in 2D
+// GetPosition : Returns X and Y co-ords of Thing's centre in 2D
 func (t *Thing) GetPosition() (int, int) {
 	if t.Object == nil {
 		return 0, 0
@@ -79,7 +82,7 @@ func (t *Thing) GetPosition() (int, int) {
 	return int(x), int(y)
 }
 
-// SetPosition : Sets X and Y co-ords of Thing's object centre in 2D
+// SetPosition : Sets X and Y co-ords of Thing's centre in 2D
 func (t *Thing) SetPosition(x int, y int) {
 	if t.Object == nil {
 		return
@@ -87,7 +90,7 @@ func (t *Thing) SetPosition(x int, y int) {
 	t.Object.SetPosition(float32(x), float32(y))
 }
 
-// SetPositionVec2 : Sets X and Y co-ords of Thing's object centre
+// SetPositionVec2 : Sets X and Y co-ords of Thing's centre
 // in 2D using a vector of 2 elements
 func (t *Thing) SetPositionVec2(p mgl32.Vec2) {
 	if t.Object == nil {
@@ -96,7 +99,7 @@ func (t *Thing) SetPositionVec2(p mgl32.Vec2) {
 	t.Object.SetPositionVec2(p)
 }
 
-// SetZOrder : Sets the height of Thing's object in 3D space
+// SetZOrder : Sets the height of Thing in 3D space
 // as an integer compared with other objects
 func (t *Thing) SetZOrder(z int) {
 	if t.Object == nil {
@@ -154,6 +157,7 @@ func (t *Thing) MoveRight(amount int) {
 		Mul4(t.Object.Model)
 }
 
+// TurnClockwise : Rotates Thing clockwise by angle degrees
 func (t *Thing) TurnClockwise(angle int) {
 	if t.Object == nil {
 		return
@@ -162,6 +166,7 @@ func (t *Thing) TurnClockwise(angle int) {
 	t.Object.Rotate(float32(angle))
 }
 
+// TurnAntiClockwise : Rotates Thing anti-clockwise by angle degrees
 func (t *Thing) TurnAntiClockwise(angle int) {
 	if t.Object == nil {
 		return
@@ -179,6 +184,8 @@ func (t *Thing) Direction() int {
 	return radToNearestDeg(angle)
 }
 
+// DirectionOf : Calculates the direction in degrees to the passed in Thing
+// from the receiving Thing
 func (t *Thing) DirectionOf(other *Thing) int {
 	if t.Object == nil || other.Object == nil {
 		return 0
@@ -188,6 +195,9 @@ func (t *Thing) DirectionOf(other *Thing) int {
 	return radToNearestDeg(angle)
 }
 
+// IsOnScreen : Returns true if Thing is on screen
+// A circle is on screen if the entire circle is on screen
+// A Mesh is on screen if it's centre is on screen
 func (t *Thing) IsOnScreen() bool {
 	if t.Object == nil {
 		return false
@@ -202,6 +212,8 @@ func (t *Thing) IsOnScreen() bool {
 	}
 }
 
+// Delete : Deletes Thing's object and removes it's tags and it from the object list
+// Thing continues to exist
 func (t *Thing) Delete() {
 	if t.Object == nil {
 		return
@@ -212,6 +224,8 @@ func (t *Thing) Delete() {
 	t.Object = nil
 }
 
+// IsDeleted : Returns true if Thing's object is nil
+// i.e. if Thing has been "Delete"d
 func (t *Thing) IsDeleted() bool {
 	return t.Object == nil
 }

@@ -60,6 +60,8 @@ func (o *Object) Direction() float64 {
 	return math.Atan2(float64(o.Model.At(1, 1)), float64(o.Model.At(0, 1))) - math.Pi/2
 }
 
+// DirectionOf : Calculates the direction in radians to the passed in object
+// from the receiving object
 func (o *Object) DirectionOf(other *Object) float64 {
 	direction := other.Model.Col(3).Vec3().Sub(o.Model.Col(3).Vec3())
 

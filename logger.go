@@ -5,6 +5,7 @@ import (
 	"log"
 )
 
+// The levels of logging we support
 var (
 	Trace   *log.Logger
 	Info    *log.Logger
@@ -12,6 +13,7 @@ var (
 	Error   *log.Logger
 )
 
+// InitLogger : Initialise all the logger function pointers for log levels
 func InitLogger(
 	traceHandle io.Writer,
 	infoHandle io.Writer,

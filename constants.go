@@ -4,8 +4,10 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
+// Key : var to reference lements of the keyspace
 type Key int
 
+// Simple Key mappings for glfw keys
 const (
 	KeyUnknown      Key = Key(glfw.KeyUnknown)
 	KeySpace        Key = Key(glfw.KeySpace)

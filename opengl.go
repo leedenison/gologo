@@ -15,6 +15,7 @@ import (
 	_ "image/png"
 )
 
+// GLState : Stores the shaders, textures, and projection
 type GLState struct {
 	Shaders         map[string]*GLShader
 	Textures        map[string]*GLTexture
@@ -22,11 +23,13 @@ type GLState struct {
 	Projection      mgl32.Mat4
 }
 
+// GLTexture : stores core data on a GL texture
 type GLTexture struct {
 	ID   uint32
 	Size [2]uint32
 }
 
+// GLShader : Stores core info for a GL shader
 type GLShader struct {
 	Program    uint32
 	Projection int32
@@ -34,6 +37,7 @@ type GLShader struct {
 	Uniforms   map[int]int32
 }
 
+// CreateTexture : use the image from the supplied path to create a texture
 func CreateTexture(texturePath string) (*GLTexture, error) {
 	result, textureExists := glState.Textures[texturePath]
 	if !textureExists {
@@ -92,6 +96,8 @@ func loadTexture(file string, textureUnit uint32) (uint32, uint32, uint32, error
 	return texture, uint32(rgba.Rect.Size().X), uint32(rgba.Rect.Size().Y), nil
 }
 
+// CreateShaderProgram : compiles the vertex and fragment shaders, create the program
+// attach the shaders, link the program and store the program with it's uniforms for later use
 func CreateShaderProgram(vertexShader string, fragmentShader string) (*GLShader, error) {
 	programKey := vertexShader + "," + fragmentShader
 	program, programExists := glState.Shaders[programKey]

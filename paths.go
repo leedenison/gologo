@@ -4,11 +4,13 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+// Path : the list of vectors and times for a given path to follow
 type Path struct {
 	Segments [][4]mgl32.Vec2
 	Times    []float32
 }
 
+// GetPosition : returns the position along a path for a given time
 func (p *Path) GetPosition(time float32) (int, int) {
 	var accumulator float32
 
@@ -31,6 +33,7 @@ func (p *Path) GetPosition(time float32) (int, int) {
 	return 0, 0
 }
 
+// CreatePath : Retuns a constructed path with times for a list of x, y coords for the path
 func CreatePath(path []int) *Path {
 	if len(path) < 4 || len(path)%2 != 0 {
 		panic("Path must an even number of integers")

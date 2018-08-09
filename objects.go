@@ -7,6 +7,12 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+// Object : Struct to hold fundamental object for gologo
+// Model is the mgl32 model
+// ZOrder is the gologo managed height order of the objects - 0 is valid
+// Creation is a automatically managed time the object was created
+// Primitive is the physics primitive for this object - can be nil
+// Renderer is the gl renderer for this object - can be nil
 type Object struct {
 	Model     mgl32.Mat4
 	ZOrder    int
@@ -162,6 +168,7 @@ func (o *Object) Clone() *Object {
 	return &objectCopy
 }
 
+// ByZOrder : Height ordering array for Objects
 type ByZOrder []*Object
 
 func (s ByZOrder) Len() int {

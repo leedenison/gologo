@@ -85,11 +85,10 @@ func (c *Circle) GetInverseMass() float32 {
 }
 
 func (c *Circle) IsOnScreen(x float32, y float32) bool {
-
-	return y-c.Radius <= float32(windowState.Height) &&
-		y+c.Radius >= 0.0 &&
-		x-c.Radius <= float32(windowState.Width) &&
-		x+c.Radius >= 0.0
+	return y+c.Radius <= float32(windowState.Height) &&
+		y-c.Radius >= 0.0 &&
+		x+c.Radius <= float32(windowState.Width) &&
+		x-c.Radius >= 0.0
 }
 
 func (c *Circle) Clone() Primitive {

@@ -50,14 +50,20 @@ func (o *Object) SetPositionVec2(p mgl32.Vec2) {
 	o.Model.SetCol(3, p.Vec4(0.0, 1.0))
 }
 
-// SetZOrder : Sets the height of the object in 3D space
-// as an integer compared with other objects
-func (o *Object) SetZOrder(z int) {
-	o.ZOrder = z
+// Translate : Move the position by the supplied X and Y values
+// relative to the current position
+func (o *Object) Translate(x float32, y float32) {
+	o.Model = mgl32.Translate3D(x, y, 0.0).Mul4(o.Model)
 }
 
+// Direction : Return the angle the object has been rotated since it was created
 func (o *Object) Direction() float64 {
 	return math.Atan2(float64(o.Model.At(1, 1)), float64(o.Model.At(0, 1))) - math.Pi/2
+}
+
+// DirectionNormal : Return the normal to the angle the object has been rotated since it was created
+func (o *Object) DirectionNormal() mgl32.Vec3 {
+	return o.Model.Col(1).Vec3().Normalize()
 }
 
 // DirectionOf : Calculates the direction in radians to the passed in object
@@ -68,10 +74,17 @@ func (o *Object) DirectionOf(other *Object) float64 {
 	return math.Atan2(float64(direction[1]), float64(direction[0])) - math.Pi/2
 }
 
+// Rotate : Rotate the object by the supplied angle in radians
 func (o *Object) Rotate(angle float32) {
 	rotation := mgl32.HomogRotate3DZ(angle)
 
 	o.Model = o.Model.Mul4(rotation)
+}
+
+// SetZOrder : Sets the height of the object in 3D space
+// as an integer compared with other objects
+func (o *Object) SetZOrder(z int) {
+	o.ZOrder = z
 }
 
 // GetRenderer : Returns the renderer for this object

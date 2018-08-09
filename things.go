@@ -108,53 +108,42 @@ func (t *Thing) SetZOrder(z int) {
 	t.Object.SetZOrder(z)
 }
 
+// MoveForward : Move the object forward by amount in the direction it's currently facing
 func (t *Thing) MoveForward(amount int) {
 	if t.Object == nil {
 		return
 	}
-	forward := t.Object.Model.Col(1).Vec3().Normalize()
-	t.Object.Model = mgl32.Translate3D(
-		forward.X()*float32(amount),
-		forward.Y()*float32(amount),
-		0.0).
-		Mul4(t.Object.Model)
+	forward := t.Object.DirectionNormal()
+	t.Object.Translate(forward.X()*float32(amount), forward.Y()*float32(amount))
 }
 
+// MoveBack : Move the object backward by amount in the opposite of the direction
+// it's currently facing
 func (t *Thing) MoveBack(amount int) {
 	if t.Object == nil {
 		return
 	}
-	forward := t.Object.Model.Col(1).Vec3().Normalize()
-	t.Object.Model = mgl32.Translate3D(
-		-forward.X()*float32(amount),
-		-forward.Y()*float32(amount),
-		0.0).
-		Mul4(t.Object.Model)
+	forward := t.Object.DirectionNormal()
+	t.Object.Translate(-forward.X()*float32(amount), -forward.Y()*float32(amount))
 }
 
+// MoveLeft : Move the object left by amount from the direction it's currently facing
 func (t *Thing) MoveLeft(amount int) {
 	if t.Object == nil {
 		return
 	}
 	right := t.Object.Model.Col(0).Vec3().Normalize()
-	t.Object.Model = mgl32.Translate3D(
-		-right.X()*float32(amount),
-		-right.Y()*float32(amount),
-		0.0).
-		Mul4(t.Object.Model)
+	t.Object.Translate(-right.X()*float32(amount), -right.Y()*float32(amount))
 }
 
+// MoveRight : Move the object right by amount from the direction it's currently facing
 func (t *Thing) MoveRight(amount int) {
 	if t.Object == nil {
 		return
 	}
 
 	right := t.Object.Model.Col(0).Vec3().Normalize()
-	t.Object.Model = mgl32.Translate3D(
-		right.X()*float32(amount),
-		right.Y()*float32(amount),
-		0.0).
-		Mul4(t.Object.Model)
+	t.Object.Translate(right.X()*float32(amount), right.Y()*float32(amount))
 }
 
 // TurnClockwise : Rotates Thing clockwise by angle degrees
@@ -163,7 +152,7 @@ func (t *Thing) TurnClockwise(angle int) {
 		return
 	}
 
-	t.Object.Rotate(float32(angle))
+	t.Object.Rotate(float32(-angle))
 }
 
 // TurnAntiClockwise : Rotates Thing anti-clockwise by angle degrees
@@ -172,7 +161,7 @@ func (t *Thing) TurnAntiClockwise(angle int) {
 		return
 	}
 
-	t.Object.Rotate(float32(-angle))
+	t.Object.Rotate(float32(angle))
 }
 
 func (t *Thing) Direction() int {

@@ -143,12 +143,12 @@ func loadConfigs(resourceDir string) error {
 func loadConfig(resourcePath string) (*TemplateConfig, error) {
 	parseResult := TemplateConfig{}
 
-	resourceJson, err := ioutil.ReadFile(resourcePath)
+	resourceJSON, err := ioutil.ReadFile(resourcePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to load resource: %s", resourcePath)
 	}
 
-	err = json.Unmarshal(resourceJson, &parseResult)
+	err = json.Unmarshal(resourceJSON, &parseResult)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
 	}
@@ -286,7 +286,7 @@ func (config *SpriteRendererConfig) Create() (Renderer, error) {
 	uniformValues := map[int]interface{}{}
 
 	if config.Texture == "" {
-		return nil, errors.New("Missing required field 'Texture'.")
+		return nil, errors.New("Missing required field 'Texture'")
 	}
 
 	uniform := []int{UNIFORM_TEXTURE}

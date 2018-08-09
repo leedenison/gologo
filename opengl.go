@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	_ "image/png"
+
 	"os"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
+
+	// Bring in png so we support this file format
+	_ "image/png"
 )
 
 type GLState struct {

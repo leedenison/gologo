@@ -28,8 +28,8 @@ func (cg *TaggedContactGenerator) GenerateContacts() []*Contact {
 	targetSet, existsTgt := tags[cg.TargetTag]
 
 	if existsSrc && existsTgt {
-		for objectA, _ := range sourceSet {
-			for objectB, _ := range targetSet {
+		for objectA := range sourceSet {
+			for objectB := range targetSet {
 				if objectA != objectB && objectA.Primitive != nil && objectB.Primitive != nil {
 					contactPoint, contactNormal, penetration :=
 						cg.GenerateContactData(objectA, objectB)
@@ -97,7 +97,7 @@ func (cg *ScreenEdgeContactGenerator) GenerateContacts() []*Contact {
 	set, exists := tags[cg.Tag]
 
 	if exists {
-		for object, _ := range set {
+		for object := range set {
 			if object.Primitive != nil {
 				for direction := SCREEN_UP; direction <= SCREEN_RIGHT; direction++ {
 					contactPoint, contactNormal, penetration :=

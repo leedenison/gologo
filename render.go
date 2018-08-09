@@ -172,8 +172,8 @@ func (r *MeshRenderer) DebugRenderAt(model mgl32.Mat4, custom map[int]interface{
 
 func (r *MeshRenderer) Animate(object *Object) {}
 
-// Clones a MeshRenderer.  The shader program and mesh are retained as shared
-// instances.  The uniform values are shallow copied.
+// Clone : Clones a MeshRenderer.  The shader program and mesh are
+// retained as shared instances.  The uniform values are shallow copied.
 func (r *MeshRenderer) Clone() Renderer {
 	uniforms := make(map[int]interface{})
 	for k, v := range r.Uniforms {

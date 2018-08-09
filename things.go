@@ -41,7 +41,7 @@ func ShowAllThings(prefix string) {
 	objectsPerRow := (DEFAULT_WIN_SIZE_X / objectSpace) - 1
 	i := 0
 
-	for name, _ := range configs {
+	for name := range configs {
 		if strings.HasPrefix(name, prefix) {
 			positionX := (i%objectsPerRow + 1) * objectSpace
 			positionY := (i/objectsPerRow + 1) * objectSpace

@@ -21,7 +21,7 @@ func Init() {
 		Error.Fatalln("window.Init failed:", err)
 	}
 
-	if err := CreateWindow(TITLE); err != nil {
+	if err := CreateWindow(title); err != nil {
 		Error.Fatalln("window.CreateWindow failed:", err)
 	}
 

@@ -8,8 +8,8 @@ import (
 )
 
 func init() {
-	windowState.Width = DEFAULT_WIN_SIZE_X
-	windowState.Height = DEFAULT_WIN_SIZE_Y
+	windowState.Width = defaultWinSizeX
+	windowState.Height = defaultWinSizeY
 
 	_, err := GetExecutablePath()
 	if err != nil {
@@ -73,7 +73,7 @@ func GetResourcePath() (string, error) {
 		return "", err
 	}
 
-	return path + PATH_SEPARATOR + RESOURCE_PATH, nil
+	return path + pathSeparator + resourcePath, nil
 }
 
 func GetExecutablePath() (string, error) {

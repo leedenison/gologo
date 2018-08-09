@@ -38,7 +38,7 @@ func CreateTexture(texturePath string) (*GLTexture, error) {
 	result, textureExists := glState.Textures[texturePath]
 	if !textureExists {
 		texture, sizeX, sizeY, err := loadTexture(
-			executablePath+PATH_SEPARATOR+texturePath,
+			executablePath+pathSeparator+texturePath,
 			gl.TEXTURE0)
 		if err != nil {
 			return nil, err
@@ -97,7 +97,7 @@ func CreateShaderProgram(vertexShader string, fragmentShader string) (*GLShader,
 	program, programExists := glState.Shaders[programKey]
 	if !programExists {
 		var err error
-		program, err = loadProgram(SHADERS[vertexShader], SHADERS[fragmentShader])
+		program, err = loadProgram(shaders[vertexShader], shaders[fragmentShader])
 		if err != nil {
 			return nil, err
 		}

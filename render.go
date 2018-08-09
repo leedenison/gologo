@@ -12,10 +12,10 @@ import (
 type ScreenDirection int
 
 const (
-	SCREEN_UP ScreenDirection = iota
-	SCREEN_DOWN
-	SCREEN_LEFT
-	SCREEN_RIGHT
+	screenUp ScreenDirection = iota
+	screenDown
+	screenLeft
+	screenRight
 )
 
 type Rect [2][2]float32
@@ -154,7 +154,7 @@ func (r *MeshRenderer) DebugRenderAt(model mgl32.Mat4, custom map[int]interface{
 	Trace.Printf("MeshRenderer: Mesh vertices:\n%v\n", r.MeshVertices)
 
 	rendered := []mgl32.Vec4{}
-	for i := 0; i < len(r.MeshVertices); i += GL_MESH_STRIDE {
+	for i := 0; i < len(r.MeshVertices); i += glMeshStride {
 		rv := mgl32.Vec4{
 			r.MeshVertices[i],
 			r.MeshVertices[i+1],
@@ -205,13 +205,13 @@ func CreateMeshRenderer(
 	}
 
 	gl.UseProgram(shader.Program)
-	gl.BindFragDataLocation(shader.Program, 0, FRAG_LOC_OUTPUT_COLOR)
+	gl.BindFragDataLocation(shader.Program, 0, fragLocOutputColor)
 
-	shader.Projection = gl.GetUniformLocation(shader.Program, UNIFORM_LOC_PROJECTION)
-	shader.Model = gl.GetUniformLocation(shader.Program, UNIFORM_LOC_MODEL)
+	shader.Projection = gl.GetUniformLocation(shader.Program, shaderUniformLocProjection)
+	shader.Model = gl.GetUniformLocation(shader.Program, shaderUniformLocModel)
 
 	for _, uniform := range uniforms {
-		shader.Uniforms[uniform] = gl.GetUniformLocation(shader.Program, UNIFORMS[uniform])
+		shader.Uniforms[uniform] = gl.GetUniformLocation(shader.Program, shaderUniforms[uniform])
 	}
 
 	mesh := createMeshBuffer(shader.Program, meshVertices)
@@ -221,7 +221,7 @@ func CreateMeshRenderer(
 		Mesh:         mesh,
 		Uniforms:     uniformValues,
 		MeshVertices: meshVertices,
-		VertexCount:  int32(len(meshVertices) / GL_MESH_STRIDE),
+		VertexCount:  int32(len(meshVertices) / glMeshStride),
 	}, nil
 }
 
@@ -240,14 +240,14 @@ func createMeshBuffer(shader uint32, vertices []float32) uint32 {
 		gl.Ptr(vertices),
 		gl.STATIC_DRAW)
 
-	vertAttrib := uint32(gl.GetAttribLocation(shader, ATTRIB_LOC_VERTEX))
+	vertAttrib := uint32(gl.GetAttribLocation(shader, attribLocVertex))
 	gl.EnableVertexAttribArray(vertAttrib)
-	gl.VertexAttribPointer(vertAttrib, 3, gl.FLOAT, false, GL_MESH_STRIDE_BYTES,
+	gl.VertexAttribPointer(vertAttrib, 3, gl.FLOAT, false, glMeshStrideBytes,
 		gl.PtrOffset(0))
 
-	texCoordAttrib := uint32(gl.GetAttribLocation(shader, ATTRIB_LOC_VERTEX_TEX_COORD))
+	texCoordAttrib := uint32(gl.GetAttribLocation(shader, attribLocVertexTexCoord))
 	gl.EnableVertexAttribArray(texCoordAttrib)
-	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, GL_MESH_STRIDE_BYTES,
+	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, glMeshStrideBytes,
 		gl.PtrOffset(3*4))
 
 	return vao
@@ -407,7 +407,7 @@ func (r *ExplosionRenderer) Render(object *Object) {
 		r.Particles[i].Renderer.RenderAt(
 			object.Model.Mul4(r.Particles[i].Model),
 			map[int]interface{}{
-				UNIFORM_ALPHA: 1.0 - float32(age)/float32(r.MaxAge),
+				uniformAlpha: 1.0 - float32(age)/float32(r.MaxAge),
 			})
 	}
 }

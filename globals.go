@@ -11,13 +11,13 @@ import (
 // API globals
 //
 
-var DEFAULT_POSITION = mgl32.Translate3D(
-	DEFAULT_WIN_SIZE_X/2,
-	DEFAULT_WIN_SIZE_Y/2,
+var defaultPosition = mgl32.Translate3D(
+	defaultWinSizeX/2,
+	defaultWinSizeY/2,
 	0.0)
 
-var DEFAULT_ORIENTATION = mgl32.Ident4()
-var DEFAULT_SCALE = mgl32.Ident4()
+var defaultOrientation = mgl32.Ident4()
+var defaultScale = mgl32.Ident4()
 
 var apiCallback func(int)
 
@@ -25,10 +25,10 @@ var apiCallback func(int)
 // OS globals
 //
 
-const FLOAT32_SIZE_BYTES = 4
+const float32SizeBytes = 4
 
-const RESOURCE_PATH = "res"
-const PATH_SEPARATOR = "/"
+const resourcePath = "res"
+const pathSeparator = "/"
 
 var executablePath string
 
@@ -36,11 +36,11 @@ var executablePath string
 // Window globals
 //
 
-const TITLE = "Gologo!"
-const GOLOGO_MAIN_WIN = "GOLOGO_MAIN"
+const title = "Gologo!"
+const gologoMainWin = "GOLOGO_MAIN"
 
-const DEFAULT_WIN_SIZE_X = 1024
-const DEFAULT_WIN_SIZE_Y = 768
+const defaultWinSizeX = 1024
+const defaultWinSizeY = 768
 
 var windowState = WindowState{
 	Width:  0,
@@ -66,14 +66,14 @@ var tags = map[string]ObjectSet{}
 // Physics globals
 //
 
-const NONE = "NONE"
-const CIRCLE = "CIRCLE"
-const SPRITE_CIRCLE = "SPRITE_CIRCLE"
+const none = "NONE"
+const circle = "CIRCLE"
+const spriteCircle = "SPRITE_CIRCLE"
 
-const CIRCLE_MESH_SIZE_FACTOR = 0.65
+const circleMeshSizeFactor = 0.65
 
-const AREA_TO_MASS_RATIO = 0.5
-const MAX_CONTACT_ITERATIONS = 2
+const areaToMassRatio = 0.5
+const maxContactIterations = 2
 
 var tick = TickState{}
 
@@ -101,8 +101,8 @@ var physicsTypes = map[string]reflect.Type{
 // Rendering globals
 //
 
-const GL_MESH_STRIDE = 5
-const GL_MESH_STRIDE_BYTES = GL_MESH_STRIDE * FLOAT32_SIZE_BYTES
+const glMeshStride = 5
+const glMeshStrideBytes = glMeshStride * float32SizeBytes
 
 var glState = GLState{
 	Shaders:         map[string]*GLShader{},
@@ -116,27 +116,27 @@ var rendered = []*Object{}
 // Shader program globals
 //
 
-var UNIFORM_PROJECTION = 1
-var UNIFORM_MODEL = 2
-var UNIFORM_TEXTURE = 3
-var UNIFORM_ALPHA = 4
-var UNIFORM_COLOR = 5
+var uniformProjection = 1
+var uniformModel = 2
+var uniformTexture = 3
+var uniformAlpha = 4
+var uniformColor = 5
 
-var UNIFORM_LOC_PROJECTION = gl.Str("projection\x00")
-var UNIFORM_LOC_MODEL = gl.Str("model\x00")
+var shaderUniformLocProjection = gl.Str("projection\x00")
+var shaderUniformLocModel = gl.Str("model\x00")
 
-var UNIFORMS = map[int]*uint8{
-	UNIFORM_TEXTURE: gl.Str("tex\x00"),
-	UNIFORM_ALPHA:   gl.Str("alpha\x00"),
-	UNIFORM_COLOR:   gl.Str("color\x00"),
+var shaderUniforms = map[int]*uint8{
+	uniformTexture: gl.Str("tex\x00"),
+	uniformAlpha:   gl.Str("alpha\x00"),
+	uniformColor:   gl.Str("color\x00"),
 }
 
-var FRAG_LOC_OUTPUT_COLOR = gl.Str("outputColor\x00")
+var fragLocOutputColor = gl.Str("outputColor\x00")
 
-var ATTRIB_LOC_VERTEX = gl.Str("vert\x00")
-var ATTRIB_LOC_VERTEX_TEX_COORD = gl.Str("vertTexCoord\x00")
+var attribLocVertex = gl.Str("vert\x00")
+var attribLocVertexTexCoord = gl.Str("vertTexCoord\x00")
 
-var SHADERS = map[string]string{
+var shaders = map[string]string{
 	"ORTHO_VERTEX_SHADER": `
 #version 330
 

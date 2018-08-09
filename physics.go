@@ -58,7 +58,7 @@ type Circle struct {
 func (c *Circle) InitFromMesh(mesh []float32) Primitive {
 	var minX, maxX, minY, maxY float64
 
-	for i := 0; i < len(mesh); i = i + GL_MESH_STRIDE {
+	for i := 0; i < len(mesh); i = i + glMeshStride {
 		minX = math.Min(minX, float64(mesh[i]))
 		maxX = math.Max(maxX, float64(mesh[i]))
 		minY = math.Min(minY, float64(mesh[i+1]))
@@ -66,12 +66,12 @@ func (c *Circle) InitFromMesh(mesh []float32) Primitive {
 	}
 
 	size := math.Max(maxX-minX, maxY-minY)
-	radius := float32((size * CIRCLE_MESH_SIZE_FACTOR) / 2)
+	radius := float32((size * circleMeshSizeFactor) / 2)
 	area := math.Pi * radius * radius
 	inverseMass := float32(1)
 
 	if area > 0 {
-		inverseMass = 1 / (area * AREA_TO_MASS_RATIO)
+		inverseMass = 1 / (area * areaToMassRatio)
 	}
 
 	return &Circle{

@@ -219,8 +219,8 @@ func (config *MeshRendererConfig) Create() (Renderer, error) {
 	var uniforms []int
 
 	if config.Texture != "" {
-		uniforms = append(uniforms, UNIFORM_TEXTURE)
-		uniformValues[UNIFORM_TEXTURE], err = CreateTexture(config.Texture)
+		uniforms = append(uniforms, uniformTexture)
+		uniformValues[uniformTexture], err = CreateTexture(config.Texture)
 		if err != nil {
 			return nil, err
 		}
@@ -229,8 +229,8 @@ func (config *MeshRendererConfig) Create() (Renderer, error) {
 	// TODO: Should this be elsif - which order with texture?
 	// TODO: deal with the fact that Vec4 always has a 4 length value and 0,0,0,0 is valid
 	if len(config.Color) > 0 {
-		uniforms = append(uniforms, UNIFORM_COLOR)
-		uniformValues[UNIFORM_COLOR] = config.Color
+		uniforms = append(uniforms, uniformColor)
+		uniformValues[uniformColor] = config.Color
 	}
 
 	err = validateMeshRenderConfig(
@@ -253,13 +253,13 @@ func validateMeshRenderConfig(
 	meshVertices []float32) error {
 	if vertexShader == "" {
 		return errors.New("Missing required field: 'VertexShader'")
-	} else if _, ok := SHADERS[vertexShader]; !ok {
+	} else if _, ok := shaders[vertexShader]; !ok {
 		return errors.Errorf("Unknown 'VertexShader': %v", vertexShader)
 	}
 
 	if fragmentShader == "" {
 		return errors.New("Missing required field: 'FragmentShader'")
-	} else if _, ok := SHADERS[fragmentShader]; !ok {
+	} else if _, ok := shaders[fragmentShader]; !ok {
 		return errors.Errorf("Unknown 'FragmentShader': %v", fragmentShader)
 	}
 
@@ -289,12 +289,12 @@ func (config *SpriteRendererConfig) Create() (Renderer, error) {
 		return nil, errors.New("Missing required field 'Texture'")
 	}
 
-	uniform := []int{UNIFORM_TEXTURE}
+	uniform := []int{uniformTexture}
 	texture, err := CreateTexture(config.Texture)
 	if err != nil {
 		return nil, err
 	}
-	uniformValues[UNIFORM_TEXTURE] = texture
+	uniformValues[uniformTexture] = texture
 
 	meshVertices := CalcMeshFromSprite(
 		float32(config.TextureOrigin[0]),
@@ -373,7 +373,7 @@ type CharRendererConfig struct {
 func (config *TextRendererConfig) Create() (Renderer, error) {
 	uniformValues := map[int]interface{}{}
 
-	uniform := []int{UNIFORM_TEXTURE}
+	uniform := []int{uniformTexture}
 
 	result := TextRenderer{
 		CharWidths:    map[byte]float32{},
@@ -393,7 +393,7 @@ func (config *TextRendererConfig) Create() (Renderer, error) {
 		if err != nil {
 			return nil, err
 		}
-		uniformValues[UNIFORM_TEXTURE] = texture
+		uniformValues[uniformTexture] = texture
 
 		charWidth := charConfig.CharRect[1][0] - charConfig.CharRect[0][0]
 		meshVertices := CalcMeshFromChar(
@@ -434,10 +434,10 @@ func (config *ExplosionRendererConfig) Create() (Renderer, error) {
 	meshRenderers := []*MeshRenderer{}
 	uniformValues := map[int]interface{}{}
 
-	uniform := []int{UNIFORM_ALPHA, UNIFORM_TEXTURE}
+	uniform := []int{uniformAlpha, uniformTexture}
 
 	for _, meshRendererConfig := range config.MeshRenderers {
-		uniformValues[UNIFORM_TEXTURE], err = CreateTexture(meshRendererConfig.Texture)
+		uniformValues[uniformTexture], err = CreateTexture(meshRendererConfig.Texture)
 		if err != nil {
 			return nil, err
 		}

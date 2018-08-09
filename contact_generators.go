@@ -99,7 +99,7 @@ func (cg *ScreenEdgeContactGenerator) GenerateContacts() []*Contact {
 	if exists {
 		for object := range set {
 			if object.Primitive != nil {
-				for direction := SCREEN_UP; direction <= SCREEN_RIGHT; direction++ {
+				for direction := screenUp; direction <= screenRight; direction++ {
 					contactPoint, contactNormal, penetration :=
 						cg.GenerateContactData(object, direction)
 
@@ -144,7 +144,7 @@ func (cg *ScreenEdgeContactGenerator) GenerateContactData(
 	case *Circle:
 		position := object.Model.Col(3)
 		switch direction {
-		case SCREEN_UP:
+		case screenUp:
 			return mgl32.Vec4{
 					position.X(),
 					(float32(windowState.Height) + position.Y() + primitive.Radius) / 2,
@@ -153,7 +153,7 @@ func (cg *ScreenEdgeContactGenerator) GenerateContactData(
 				},
 				mgl32.Vec4{0.0, -1.0, 0.0, 1.0},
 				position.Y() + primitive.Radius - float32(windowState.Height)
-		case SCREEN_DOWN:
+		case screenDown:
 			return mgl32.Vec4{
 					position.X(),
 					(position.Y() - primitive.Radius) / 2,
@@ -162,7 +162,7 @@ func (cg *ScreenEdgeContactGenerator) GenerateContactData(
 				},
 				mgl32.Vec4{0.0, 1.0, 0.0, 1.0},
 				primitive.Radius - position.Y()
-		case SCREEN_LEFT:
+		case screenLeft:
 			return mgl32.Vec4{
 					(position.X() - primitive.Radius) / 2,
 					position.Y(),
@@ -171,7 +171,7 @@ func (cg *ScreenEdgeContactGenerator) GenerateContactData(
 				},
 				mgl32.Vec4{1.0, 0.0, 0.0, 1.0},
 				primitive.Radius - position.X()
-		case SCREEN_RIGHT:
+		case screenRight:
 			return mgl32.Vec4{
 					(float32(windowState.Width) + position.X() + primitive.Radius) / 2,
 					position.Y(),

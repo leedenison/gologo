@@ -38,7 +38,7 @@ func (t *ThingPostContactResolver) ResolveContact(contact *Contact) {
 // ShowAllThings : Displays every template object on screen side by side
 func ShowAllThings(prefix string) {
 	objectSpace := 100
-	objectsPerRow := (DEFAULT_WIN_SIZE_X / objectSpace) - 1
+	objectsPerRow := (defaultWinSizeX / objectSpace) - 1
 	i := 0
 
 	for name := range configs {
@@ -236,9 +236,9 @@ type ThingBuilder struct {
 
 func Builder() *ThingBuilder {
 	return &ThingBuilder{
-		Position:    DEFAULT_POSITION,
-		Orientation: DEFAULT_ORIENTATION,
-		RenderScale: DEFAULT_SCALE,
+		Position:    defaultPosition,
+		Orientation: defaultOrientation,
+		RenderScale: defaultScale,
 	}
 }
 

@@ -54,7 +54,7 @@ func ResolveContacts(contacts []*Contact) {
 
 	// Do a limited number of iterations resolving the deepest penetration
 	// first.
-	for i := 0; i < len(contacts)*MAX_CONTACT_ITERATIONS; i++ {
+	for i := 0; i < len(contacts)*maxContactIterations; i++ {
 		var maxPenetration float32
 		maxIdx := len(contacts)
 

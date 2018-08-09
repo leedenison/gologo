@@ -52,9 +52,9 @@ func Rectangle(rect Rect, color mgl32.Vec4) *Object {
 	meshRenderer, err := CreateMeshRenderer(
 		"ORTHO_VERTEX_SHADER",
 		"COLOR_FRAGMENT_SHADER",
-		[]int{UNIFORM_COLOR},
+		[]int{uniformColor},
 		map[int]interface{}{
-			UNIFORM_COLOR: color,
+			uniformColor: color,
 		},
 		meshVertices)
 	if err != nil {

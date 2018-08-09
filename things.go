@@ -132,7 +132,7 @@ func (t *Thing) MoveLeft(amount int) {
 	if t.Object == nil {
 		return
 	}
-	right := t.Object.Model.Col(0).Vec3().Normalize()
+	right := t.Object.GetModel().Col(0).Vec3().Normalize()
 	t.Object.Translate(-right.X()*float32(amount), -right.Y()*float32(amount))
 }
 
@@ -142,7 +142,7 @@ func (t *Thing) MoveRight(amount int) {
 		return
 	}
 
-	right := t.Object.Model.Col(0).Vec3().Normalize()
+	right := t.Object.GetModel().Col(0).Vec3().Normalize()
 	t.Object.Translate(right.X()*float32(amount), right.Y()*float32(amount))
 }
 
@@ -164,6 +164,8 @@ func (t *Thing) TurnAntiClockwise(angle int) {
 	t.Object.Rotate(float32(angle))
 }
 
+// Direction : Returns the angle the object has been rotated since it was
+// created in degrees
 func (t *Thing) Direction() int {
 	if t.Object == nil {
 		return 0
@@ -185,20 +187,19 @@ func (t *Thing) DirectionOf(other *Thing) int {
 }
 
 // IsOnScreen : Returns true if Thing is on screen
-// A circle is on screen if the entire circle is on screen
-// A Mesh is on screen if it's centre is on screen
+// A primitive is on screen if the entire primitive is on screen
+// A Mesh without a primitive is on screen if it's centre is on screen
 func (t *Thing) IsOnScreen() bool {
 	if t.Object == nil {
 		return false
 	}
-	switch primitive := t.Object.GetPrimitive().(type) {
-	case nil:
-		return OriginIsOnScreen(t.Object.GetModel())
-	case *Circle:
-		return CircleIsOnScreen(primitive, t.Object.GetModel())
-	default:
-		panic(fmt.Sprintf("Unhandled primitive type: %t\n", t.Object.GetPrimitive()))
+
+	primitive := t.Object.GetPrimitive()
+
+	if primitive == nil {
+		return IsOnScreen(t.Object.GetPosition())
 	}
+	return primitive.IsOnScreen(t.Object.GetPosition())
 }
 
 // Delete : Deletes Thing's object and removes it's tags and it from the object list

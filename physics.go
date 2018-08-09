@@ -44,7 +44,9 @@ func Tick() {
 //
 
 type Primitive interface {
+	InitFromMesh(mesh []float32) Primitive
 	GetInverseMass() float32
+	IsOnScreen(x float32, y float32) bool
 	Clone() Primitive
 }
 
@@ -53,33 +55,7 @@ type Circle struct {
 	Radius      float32
 }
 
-func (c *Circle) GetInverseMass() float32 {
-	return c.InverseMass
-}
-
-func (c *Circle) Clone() Primitive {
-	return &Circle{
-		InverseMass: c.InverseMass,
-		Radius:      c.Radius,
-	}
-}
-
-func CalcCircleCircleContact(
-	c1 *Circle,
-	c1Model mgl32.Mat4,
-	c2 *Circle,
-	c2Model mgl32.Mat4) (mgl32.Vec4, mgl32.Vec4, float32) {
-	v1 := c1Model.Col(3).Vec3().Sub(c2Model.Col(3).Vec3())
-	v1Len := v1.Len()
-	penetration := (c1.Radius + c2.Radius) - v1Len
-	factor := (c2.Radius - penetration/2) / v1Len
-	contactPoint := c2Model.Col(3).Add(v1.Mul(factor).Vec4(1.0))
-	contactNormal := v1.Normalize().Vec4(1.0)
-
-	return contactPoint, contactNormal, penetration
-}
-
-func InitCircleFromMesh(mesh []float32) Primitive {
+func (c *Circle) InitFromMesh(mesh []float32) Primitive {
 	var minX, maxX, minY, maxY float64
 
 	for i := 0; i < len(mesh); i = i + GL_MESH_STRIDE {
@@ -104,20 +80,43 @@ func InitCircleFromMesh(mesh []float32) Primitive {
 	}
 }
 
-func OriginIsOnScreen(model mgl32.Mat4) bool {
-	position := model.Col(3)
-
-	return position.Y() <= float32(windowState.Height) &&
-		position.Y() >= 0.0 &&
-		position.X() <= float32(windowState.Width) &&
-		position.X() >= 0.0
+func (c *Circle) GetInverseMass() float32 {
+	return c.InverseMass
 }
 
-func CircleIsOnScreen(circle *Circle, model mgl32.Mat4) bool {
-	position := model.Col(3)
+func (c *Circle) IsOnScreen(x float32, y float32) bool {
 
-	return position.Y()-circle.Radius <= float32(windowState.Height) &&
-		position.Y()+circle.Radius >= 0.0 &&
-		position.X()-circle.Radius <= float32(windowState.Width) &&
-		position.X()+circle.Radius >= 0.0
+	return y-c.Radius <= float32(windowState.Height) &&
+		y+c.Radius >= 0.0 &&
+		x-c.Radius <= float32(windowState.Width) &&
+		x+c.Radius >= 0.0
+}
+
+func (c *Circle) Clone() Primitive {
+	return &Circle{
+		InverseMass: c.InverseMass,
+		Radius:      c.Radius,
+	}
+}
+
+func CalcCircleCircleContact(
+	c1 *Circle,
+	c1Model mgl32.Mat4,
+	c2 *Circle,
+	c2Model mgl32.Mat4) (mgl32.Vec4, mgl32.Vec4, float32) {
+	v1 := c1Model.Col(3).Vec3().Sub(c2Model.Col(3).Vec3())
+	v1Len := v1.Len()
+	penetration := (c1.Radius + c2.Radius) - v1Len
+	factor := (c2.Radius - penetration/2) / v1Len
+	contactPoint := c2Model.Col(3).Add(v1.Mul(factor).Vec4(1.0))
+	contactNormal := v1.Normalize().Vec4(1.0)
+
+	return contactPoint, contactNormal, penetration
+}
+
+func IsOnScreen(x float32, y float32) bool {
+	return y <= float32(windowState.Height) &&
+		y >= 0.0 &&
+		x <= float32(windowState.Width) &&
+		x >= 0.0
 }

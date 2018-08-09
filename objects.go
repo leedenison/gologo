@@ -107,19 +107,28 @@ func (o *Object) GetPrimitive() Primitive {
 }
 
 // SetPrimitive : Sets the primitive for this object, optionally cloning it
-func (o *Object) SetPrimitive(primitive Primitive, clone bool) {
+// and deriving default values if needed
+func (o *Object) SetPrimitive(primitive Primitive, clone bool) error {
+	if primitive.GetInverseMass() == 0 {
+		// Primitive hasn't been set up, initialise it with defaults and
+		// store it in the object and ignore the clone var as it's new
+		return o.initialisePrimitive(primitive)
+	}
+
 	if clone {
 		o.Primitive = primitive.Clone()
 	} else {
 		o.Primitive = primitive
 	}
+
+	return nil
 }
 
-// SetDefaultPrimitive : Creates a default primitive for this object
-// The default is Circle currently and will calculate the circle size
-// from the renderers mesh. Will return an error if the Renderer is
-// not set, the Renderer is not of type MeshRenderer, or has no vertices
-func (o *Object) SetDefaultPrimitive() error {
+// initialisePrimitive : Creates a default primitive for this object.
+// Will use the mesh to calculate the primitive
+// Will return an error if the Renderer is not set, the Renderer is not
+// of type MeshRenderer, or has no vertices
+func (o *Object) initialisePrimitive(primitive Primitive) error {
 	if o.Renderer == nil {
 		return errors.New("object has no renderer")
 	}
@@ -133,7 +142,7 @@ func (o *Object) SetDefaultPrimitive() error {
 		return errors.New("object renderer has no vertices")
 	}
 
-	o.Primitive = InitCircleFromMesh(meshRenderer.MeshVertices)
+	o.Primitive = primitive.InitFromMesh(meshRenderer.MeshVertices)
 
 	return nil
 }

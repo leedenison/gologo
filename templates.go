@@ -32,9 +32,6 @@ func CreateTemplateObject(templateType string, model mgl32.Mat4) (*Object, error
 
 	if template.Primitive != nil {
 		object.SetPrimitive(template.Primitive, true)
-		//	Implement this when the loadConfig has been implemented
-		//	} else if template.PhysicsPrimitiveType == "DEFAULT" {
-		//		object.SetDefaultPrimitive()
 	}
 
 	return object, nil
@@ -168,26 +165,19 @@ func loadConfig(resourcePath string) (*TemplateConfig, error) {
 		return nil, errors.Errorf("Unknown RenderType: %v\n", parseResult.RendererType)
 	}
 
-	// Create primitive config only if there is a PhysicsPrimitiveType set i.e. not "" or NONE, and
-	// the PhysicsPrimitive is Set. If the PhysicsPrimitive isn't set, if the type is DEFAULT then we
-	// can build the default, if it isn't CIRCLE then throw error
 	if parseResult.PhysicsPrimitiveType != "" && parseResult.PhysicsPrimitiveType != "NONE" {
-		if parseResult.PhysicsPrimitive != nil {
-			if physicsType, exists := physicsTypes[parseResult.PhysicsPrimitiveType]; exists {
-				untypedConfig := reflect.New(physicsType).Elem().Addr().Interface()
-				physicsConfig := untypedConfig.(PhysicsPrimitiveConfig)
+		if physicsType, exists := physicsTypes[parseResult.PhysicsPrimitiveType]; exists {
+			untypedConfig := reflect.New(physicsType).Elem().Addr().Interface()
+			physicsConfig := untypedConfig.(PhysicsPrimitiveConfig)
+			if parseResult.PhysicsPrimitive != nil {
 				err = json.Unmarshal(parseResult.PhysicsPrimitive, &physicsConfig)
 				if err != nil {
 					return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
 				}
-				parseResult.PhysicsPrimitiveConfig = physicsConfig
-			} else {
-				return nil, errors.Errorf("Unknown PhysicsPrimitiveType: %v\n", parseResult.PhysicsPrimitiveType)
 			}
-		} else if parseResult.PhysicsPrimitiveType == "CIRCLE" {
-			// Handle creating a default config - to be implemented in CreateTemplateObject
+			parseResult.PhysicsPrimitiveConfig = physicsConfig
 		} else {
-			return nil, errors.Errorf("PrimitiveType is not DEFAULT and provides no Primitive", parseResult.Name)
+			return nil, errors.Errorf("Unknown PhysicsPrimitiveType: %v\n", parseResult.PhysicsPrimitiveType)
 		}
 	}
 

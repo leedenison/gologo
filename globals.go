@@ -64,6 +64,8 @@ var tags = map[string]ObjectSet{}
 
 const none = "NONE"
 const circle = "CIRCLE"
+
+// TODO(leedenison): We probably don't need SPRITE_CIRCLE after the primitive initialization refactoring
 const spriteCircle = "SPRITE_CIRCLE"
 
 const circleMeshSizeFactor = 0.65
@@ -74,6 +76,9 @@ const maxContactIterations = 2
 var tick = TickState{}
 
 var contactGenerators = []ContactGenerator{}
+var forceGenerators = []ForceGenerator{}
+
+var integrated = []*Object{}
 
 /////////////////////////////////////////////////////////////
 // Object template globals

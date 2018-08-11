@@ -46,6 +46,9 @@ func Run() {
 			apiCallback(GetTime())
 		}
 
+		ClearForces(integrated)
+		GenerateForces(tick.Interval)
+		Integrate(tick.Interval)
 		ResolveContacts(GenerateContacts())
 		Render()
 

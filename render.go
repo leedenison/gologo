@@ -54,12 +54,13 @@ func ClearBackBuffer() {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
+// TODO(leedenison): Add duration to render for animate.
 func Render() {
 	// Sort the objects by the rendering zorder
 	sort.Sort(ByZOrder(rendered))
 	for _, object := range rendered {
 		object.Renderer.Animate(object)
-		//object.ObjectType.Renderer.DebugRender(object)
+		//object.Renderer.DebugRender(object)
 		object.Renderer.Render(object)
 	}
 	windowState.Main.SwapBuffers()

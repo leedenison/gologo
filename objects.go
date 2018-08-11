@@ -1,10 +1,10 @@
 package gologo
 
 import (
-	"errors"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/pkg/errors"
 )
 
 // Object : Struct to hold fundamental object for gologo
@@ -133,16 +133,11 @@ func (o *Object) InitialisePrimitive() error {
 		return errors.New("object has no renderer")
 	}
 
-	meshRenderer, ok := o.Renderer.(*MeshRenderer)
-	if !ok {
-		return errors.New("object's Renderer wouldn't cast to MeshRenderer, is it a MeshRenderer?")
-	}
+	err := o.Primitive.InitFromRenderer(o.Renderer)
 
-	if meshRenderer.VertexCount == 0 {
-		return errors.New("object renderer has no vertices")
+	if err != nil {
+		return errors.Wrap(err, "failed to initialise primitive from renderer")
 	}
-
-	o.Primitive.InitFromMesh(meshRenderer.MeshVertices)
 
 	return nil
 }

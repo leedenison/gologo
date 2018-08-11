@@ -187,19 +187,14 @@ func (t *Thing) DirectionOf(other *Thing) int {
 }
 
 // IsOnScreen : Returns true if Thing is on screen
-// A primitive is on screen if the entire primitive is on screen
-// A Mesh without a primitive is on screen if it's centre is on screen
 func (t *Thing) IsOnScreen() bool {
 	if t.Object == nil {
 		return false
 	}
 
-	primitive := t.Object.GetPrimitive()
+	rect := Rect{{0, 0}, GetWindowSize()}
 
-	if primitive == nil {
-		return IsOnScreen(t.Object.GetPosition())
-	}
-	return primitive.IsOnScreen(t.Object.GetPosition())
+	return t.Object.IsContainedInRect(rect)
 }
 
 // Delete : Deletes Thing's object and removes it's tags and it from the object list

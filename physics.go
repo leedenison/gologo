@@ -47,7 +47,7 @@ func Tick() {
 type Primitive interface {
 	InitFromRenderer(r Renderer) error
 	GetInverseMass() float32
-	IsOnScreen(x float32, y float32) bool
+	IsContainedInRect(obj Object, rect Rect) bool
 	Clone() Primitive
 }
 
@@ -93,11 +93,30 @@ func (c *Circle) GetInverseMass() float32 {
 	return c.InverseMass
 }
 
-func (c *Circle) IsOnScreen(x float32, y float32) bool {
-	return y+c.Radius <= float32(windowState.Height) &&
-		y-c.Radius >= 0.0 &&
-		x+c.Radius <= float32(windowState.Width) &&
-		x-c.Radius >= 0.0
+func (c *Circle) IsContainedInRect(obj Object, rect Rect) bool {
+	var xMin, xMax, yMin, yMax float32
+	x, y := obj.GetPosition()
+
+	if rect[0][0] > rect[1][0] {
+		xMin = rect[1][0]
+		xMax = rect[0][0]
+	} else {
+		xMin = rect[0][0]
+		xMax = rect[1][0]
+	}
+
+	if rect[0][1] > rect[1][1] {
+		yMin = rect[1][1]
+		yMax = rect[0][1]
+	} else {
+		yMin = rect[0][1]
+		yMax = rect[1][1]
+	}
+
+	return y+c.Radius <= yMax &&
+		y-c.Radius >= yMin &&
+		x+c.Radius <= xMax &&
+		x-c.Radius >= xMin
 }
 
 func (c *Circle) Clone() Primitive {
@@ -120,11 +139,4 @@ func CalcCircleCircleContact(
 	contactNormal := v1.Normalize().Vec4(1.0)
 
 	return contactPoint, contactNormal, penetration
-}
-
-func IsOnScreen(x float32, y float32) bool {
-	return y <= float32(windowState.Height) &&
-		y >= 0.0 &&
-		x <= float32(windowState.Width) &&
-		x >= 0.0
 }

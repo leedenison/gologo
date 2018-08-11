@@ -94,8 +94,6 @@ func Polygon(origin mgl32.Vec3, sides int, radius float32, color mgl32.Vec4) *Ob
 		meshVertices = append(meshVertices, 0.0, 0.0, 0.0, 0.5, 0.5)
 	}
 
-	fmt.Printf("meshVertices is: %v\n", meshVertices)
-
 	meshRenderer, err := CreateMeshRenderer(
 		"ORTHO_VERTEX_SHADER",
 		"COLOR_FRAGMENT_SHADER",

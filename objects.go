@@ -8,31 +8,43 @@ import (
 )
 
 // Object : Struct to hold fundamental object for gologo
-// Model is the mgl32 model
+// Position is the position of the object origin in world space
+// Orientation is the rotation of the object in radians
 // ZOrder is the gologo managed height order of the objects - 0 is valid
 // Creation is a automatically managed time the object was created
 // Primitive is the physics primitive for this object - can be nil
 // Renderer is the gl renderer for this object - can be nil
+// Body is the RigidBody physics data for this object - can be nil
 type Object struct {
-	Model     mgl32.Mat4
-	ZOrder    int
-	Creation  int
-	Primitive Primitive
-	Renderer  Renderer
+	Position    mgl32.Vec3
+	Orientation float64
+	Scale       float64
+	ZOrder      int
+	Creation    int
+	Primitive   Primitive
+	Renderer    Renderer
 }
 
 // CreateObject Main function to create a standard object
 // required a model to create an object
-func CreateObject(model mgl32.Mat4) *Object {
+func CreateObject(position mgl32.Vec3) *Object {
 	return &Object{
-		Model:    model,
+		Position: position,
 		Creation: GetTickTime(),
 	}
 }
 
 // GetModel : Returns the model for this object
 func (o *Object) GetModel() mgl32.Mat4 {
-	return o.Model
+	translate := mgl32.Translate3D(o.Position.X(), o.Position.Y(), o.Position.Z())
+	scale := mgl32.Scale3D(float32(o.Scale), float32(o.Scale), 1.0)
+	rotate := mgl32.HomogRotate3DZ(float32(o.Orientation))
+	return translate.Mul4(rotate.Mul4(scale))
+}
+
+// WorldSpace : Returns the world space point corresponding to the supplied object space co-ordinate
+func (o *Object) WorldSpace(c mgl32.Vec3) mgl32.Vec3 {
+	return o.GetModel().Mul4x1(c.Vec4(1.0)).Vec3()
 }
 
 // GetAge : Returns age of object since creation
@@ -42,49 +54,56 @@ func (o *Object) GetAge() int {
 
 // GetPosition : Returns X and Y co-ords of object centre in 2D
 func (o *Object) GetPosition() (float32, float32) {
-	return o.Model.Col(3).X(), o.Model.Col(3).Y()
+	return o.Position.X(), o.Position.Y()
 }
 
 // SetPosition : Sets X and Y co-ords of object centre in 2D
 func (o *Object) SetPosition(x float32, y float32) {
-	o.Model.SetCol(3, mgl32.Vec4{x, y, 0.0, 1.0})
+	o.Position = mgl32.Vec3{x, y, 0.0}
 }
 
 // SetPositionVec2 : Sets X and Y co-ords of object centre
 // in 2D using a vector of 2 elements
 func (o *Object) SetPositionVec2(p mgl32.Vec2) {
-	o.Model.SetCol(3, p.Vec4(0.0, 1.0))
+	o.Position = p.Vec3(0.0)
 }
 
 // Translate : Move the position by the supplied X and Y values
 // relative to the current position
 func (o *Object) Translate(x float32, y float32) {
-	o.Model = mgl32.Translate3D(x, y, 0.0).Mul4(o.Model)
+	o.Position.Add(mgl32.Vec3{x, y, 0.0})
 }
 
 // Direction : Return the angle the object has been rotated since it was created
 func (o *Object) Direction() float64 {
-	return math.Atan2(float64(o.Model.At(1, 1)), float64(o.Model.At(0, 1))) - math.Pi/2
+	return o.Orientation
+}
+
+// DirectionVector : Return the normalized vector in the direction the object has been rotated
+func (o *Object) DirectionVector() mgl32.Vec3 {
+	x := float32(math.Cos(o.Orientation))
+	y := float32(math.Sin(o.Orientation))
+	return mgl32.Vec3{x, y, 0.0}
 }
 
 // DirectionNormal : Return the normal to the angle the object has been rotated since it was created
 func (o *Object) DirectionNormal() mgl32.Vec3 {
-	return o.Model.Col(1).Vec3().Normalize()
+	// Normal to a vector [x, y] in 2D is [-y, x]
+	directionVector := o.DirectionVector()
+	return mgl32.Vec3{-directionVector.Y(), directionVector.X(), 0.0}
 }
 
 // DirectionOf : Calculates the direction in radians to the passed in object
 // from the receiving object
 func (o *Object) DirectionOf(other *Object) float64 {
-	direction := other.Model.Col(3).Vec3().Sub(o.Model.Col(3).Vec3())
+	direction := other.Position.Sub(o.Position).Normalize()
 
-	return math.Atan2(float64(direction[1]), float64(direction[0])) - math.Pi/2
+	return math.Acos(float64(direction[0]))
 }
 
 // Rotate : Rotate the object by the supplied angle in radians
 func (o *Object) Rotate(angle float32) {
-	rotation := mgl32.HomogRotate3DZ(angle)
-
-	o.Model = o.Model.Mul4(rotation)
+	o.Orientation = math.Mod(o.Orientation+float64(angle), math.Pi*2)
 }
 
 // SetZOrder : Sets the height of the object in 3D space

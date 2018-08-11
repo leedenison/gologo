@@ -121,22 +121,21 @@ func (c *Circle) IsContainedInRect(obj Object, rect Rect) bool {
 
 func (c *Circle) Clone() Primitive {
 	return &Circle{
-		InverseMass: c.InverseMass,
-		Radius:      c.Radius,
+		Radius: c.Radius,
 	}
 }
 
 func CalcCircleCircleContact(
 	c1 *Circle,
-	c1Model mgl32.Mat4,
+	c1Pos mgl32.Vec3,
 	c2 *Circle,
-	c2Model mgl32.Mat4) (mgl32.Vec4, mgl32.Vec4, float32) {
-	v1 := c1Model.Col(3).Vec3().Sub(c2Model.Col(3).Vec3())
+	c2Pos mgl32.Vec3) (mgl32.Vec3, mgl32.Vec3, float32) {
+	v1 := c1Pos.Sub(c2Pos)
 	v1Len := v1.Len()
 	penetration := (c1.Radius + c2.Radius) - v1Len
 	factor := (c2.Radius - penetration/2) / v1Len
-	contactPoint := c2Model.Col(3).Add(v1.Mul(factor).Vec4(1.0))
-	contactNormal := v1.Normalize().Vec4(1.0)
+	contactPoint := c2Pos.Add(v1.Mul(factor))
+	contactNormal := v1.Normalize()
 
 	return contactPoint, contactNormal, penetration
 }

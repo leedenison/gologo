@@ -132,7 +132,7 @@ func (t *Thing) MoveLeft(amount int) {
 	if t.Object == nil {
 		return
 	}
-	right := t.Object.GetModel().Col(0).Vec3().Normalize()
+	right := t.Object.DirectionVector()
 	t.Object.Translate(-right.X()*float32(amount), -right.Y()*float32(amount))
 }
 
@@ -142,7 +142,7 @@ func (t *Thing) MoveRight(amount int) {
 		return
 	}
 
-	right := t.Object.GetModel().Col(0).Vec3().Normalize()
+	right := t.Object.DirectionVector()
 	t.Object.Translate(right.X()*float32(amount), right.Y()*float32(amount))
 }
 
@@ -221,9 +221,9 @@ func (t *Thing) IsDeleted() bool {
 
 type ThingBuilder struct {
 	Config      string
-	Position    mgl32.Mat4
-	Orientation mgl32.Mat4
-	RenderScale mgl32.Mat4
+	Position    mgl32.Vec3
+	Orientation float64
+	RenderScale float64
 	ZOrder      int
 	Tags        []string
 	RenderData  interface{}
@@ -238,14 +238,12 @@ func Builder() *ThingBuilder {
 }
 
 func (sb *ThingBuilder) SetDepth(z float32) *ThingBuilder {
-	position := sb.Position.Col(3)
-	position[2] = z
-	sb.Position.SetCol(3, position)
+	sb.Position[2] = z
 	return sb
 }
 
 func (sb *ThingBuilder) SetScale(factor float32) *ThingBuilder {
-	sb.RenderScale = mgl32.Scale3D(factor, factor, 1)
+	sb.RenderScale = float64(factor)
 	return sb
 }
 
@@ -255,13 +253,12 @@ func (sb *ThingBuilder) SetZOrder(z int) *ThingBuilder {
 }
 
 func (sb *ThingBuilder) SetDirection(angle int) *ThingBuilder {
-	sb.Orientation = mgl32.HomogRotate3DZ(
-		mgl32.DegToRad(float32(angle)))
+	sb.Orientation = float64(mgl32.DegToRad(float32(angle)))
 	return sb
 }
 
 func (sb *ThingBuilder) SetPosition(x, y int) *ThingBuilder {
-	sb.Position = mgl32.Translate3D(float32(x), float32(y), 0.0)
+	sb.Position = mgl32.Vec3{float32(x), float32(y), 0.0}
 	return sb
 }
 
@@ -271,13 +268,13 @@ func (sb *ThingBuilder) AddTag(tag string) *ThingBuilder {
 }
 
 func (sb *ThingBuilder) Build(thingType string) *Thing {
-	model := sb.Position.Mul4(sb.Orientation.Mul4(sb.RenderScale))
-
-	object, err := CreateTemplateObject(thingType, model)
+	object, err := CreateTemplateObject(thingType, sb.Position)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create object: %v\n", err))
 	}
 	object.SetZOrder(sb.ZOrder)
+	object.Orientation = sb.Orientation
+	object.Scale = sb.RenderScale
 
 	TagRender(object)
 

@@ -95,7 +95,7 @@ type MeshRenderer struct {
 }
 
 func (r *MeshRenderer) Render(object *Object) {
-	r.RenderAt(object.Model, map[int]interface{}{})
+	r.RenderAt(object.GetModel(), map[int]interface{}{})
 }
 
 func (r *MeshRenderer) RenderAt(model mgl32.Mat4, custom map[int]interface{}) {
@@ -270,12 +270,14 @@ func (r *TextRenderer) Render(object *Object) {
 		r.InitTransforms()
 	}
 
+	model := object.GetModel()
+
 	for i := 0; i < len(r.Text); i++ {
 		renderer, ok := r.MeshRenderers[r.Text[i]]
 
 		if ok {
 			renderer.RenderAt(
-				object.Model.Mul4(r.Transforms[i]),
+				model.Mul4(r.Transforms[i]),
 				map[int]interface{}{})
 		}
 	}
@@ -309,12 +311,14 @@ func (r *TextRenderer) DebugRender(object *Object) {
 		r.InitTransforms()
 	}
 
+	model := object.GetModel()
+
 	for i := 0; i < len(r.Text); i++ {
 		renderer, ok := r.MeshRenderers[r.Text[i]]
 
 		if ok {
 			renderer.DebugRenderAt(
-				object.Model.Mul4(r.Transforms[i]),
+				model.Mul4(r.Transforms[i]),
 				map[int]interface{}{})
 		}
 	}
@@ -403,9 +407,10 @@ type ExplosionRenderer struct {
 
 func (r *ExplosionRenderer) Render(object *Object) {
 	age := GetTickTime() - object.Creation
+	model := object.GetModel()
 	for i := 0; i < len(r.Particles); i++ {
 		r.Particles[i].Renderer.RenderAt(
-			object.Model.Mul4(r.Particles[i].Model),
+			model.Mul4(r.Particles[i].Model),
 			map[int]interface{}{
 				uniformAlpha: 1.0 - float32(age)/float32(r.MaxAge),
 			})
@@ -413,7 +418,7 @@ func (r *ExplosionRenderer) Render(object *Object) {
 }
 
 func (r *ExplosionRenderer) DebugRender(object *Object) {
-	Trace.Printf("ExplosionRenderer: Model matrix:\n%v\n", object.Model)
+	Trace.Printf("ExplosionRenderer: Model matrix:\n%v\n", object.GetModel())
 }
 
 func (r *ExplosionRenderer) Animate(object *Object) {

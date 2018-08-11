@@ -11,13 +11,9 @@ import (
 // API globals
 //
 
-var defaultPosition = mgl32.Translate3D(
-	defaultWinSizeX/2,
-	defaultWinSizeY/2,
-	0.0)
-
-var defaultOrientation = mgl32.Ident4()
-var defaultScale = mgl32.Ident4()
+var defaultPosition = mgl32.Vec3{defaultWinSizeX / 2, defaultWinSizeY / 2, 0.0}
+var defaultOrientation = 0.0
+var defaultScale = 1.0
 
 var apiCallback func(int)
 

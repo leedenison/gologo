@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/pkg/errors"
 )
 
 /////////////////////////////////////////////////////////////
@@ -44,7 +45,7 @@ func Tick() {
 //
 
 type Primitive interface {
-	InitFromMesh(mesh []float32) Primitive
+	InitFromRenderer(r Renderer) error
 	GetInverseMass() float32
 	IsContainedInRect(obj Object, rect Rect) bool
 	Clone() Primitive
@@ -55,29 +56,37 @@ type Circle struct {
 	Radius      float32
 }
 
-func (c *Circle) InitFromMesh(mesh []float32) Primitive {
-	var minX, maxX, minY, maxY float64
+func (c *Circle) InitFromRenderer(r Renderer) error {
+	switch renderer := r.(type) {
+	case *MeshRenderer:
+		if renderer.VertexCount == 0 {
+			return errors.New("object's meshRenderer has no vertices")
+		}
 
-	for i := 0; i < len(mesh); i = i + glMeshStride {
-		minX = math.Min(minX, float64(mesh[i]))
-		maxX = math.Max(maxX, float64(mesh[i]))
-		minY = math.Min(minY, float64(mesh[i+1]))
-		maxY = math.Max(maxY, float64(mesh[i+1]))
+		var minX, maxX, minY, maxY float64
+		mesh := renderer.MeshVertices
+
+		for i := 0; i < len(mesh); i = i + glMeshStride {
+			minX = math.Min(minX, float64(mesh[i]))
+			maxX = math.Max(maxX, float64(mesh[i]))
+			minY = math.Min(minY, float64(mesh[i+1]))
+			maxY = math.Max(maxY, float64(mesh[i+1]))
+		}
+
+		size := math.Max(maxX-minX, maxY-minY)
+		radius := float32((size * circleMeshSizeFactor) / 2)
+		area := math.Pi * radius * radius
+		inverseMass := float32(1)
+
+		if area > 0 {
+			inverseMass = 1 / (area * areaToMassRatio)
+		}
+		c.InverseMass = inverseMass
+	default:
+		return errors.New("failed to init renderer from unsupported type: %T")
 	}
 
-	size := math.Max(maxX-minX, maxY-minY)
-	radius := float32((size * circleMeshSizeFactor) / 2)
-	area := math.Pi * radius * radius
-	inverseMass := float32(1)
-
-	if area > 0 {
-		inverseMass = 1 / (area * areaToMassRatio)
-	}
-
-	return &Circle{
-		InverseMass: inverseMass,
-		Radius:      radius,
-	}
+	return nil
 }
 
 func (c *Circle) GetInverseMass() float32 {

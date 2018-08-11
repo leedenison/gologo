@@ -57,7 +57,7 @@ func CreateWindow(title string) error {
 }
 
 func GetWindowSize() [2]float32 {
-	return [2]float32{float32(windowState.Height), float32(windowState.Width)}
+	return [2]float32{float32(windowState.Width), float32(windowState.Height)}
 }
 
 func GetWindowCenter() [2]float32 {

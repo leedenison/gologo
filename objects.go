@@ -157,33 +157,12 @@ func (o *Object) Clone() *Object {
 	return &objectCopy
 }
 
-// IsContainedInRect : returns true if the object
-// A primitive is in the rect if the entire primitive is
-// A Mesh without a primitive is in the rect if it's centre is
-func (o *Object) IsContainedInRect(rect Rect) bool {
-	var xMin, xMax, yMin, yMax float32
-
-	if o.GetPrimitive() != nil {
-		return o.GetPrimitive().IsContainedInRect(*o, rect)
-	}
-
+// OriginIsContainedInRect : returns true if the object primitive
+// is contained within the supplied rect
+func (o *Object) OriginIsContainedInRect(rect Rect) bool {
 	x, y := o.GetPosition()
 
-	if rect[0][0] > rect[1][0] {
-		xMin = rect[1][0]
-		xMax = rect[0][0]
-	} else {
-		xMin = rect[0][0]
-		xMax = rect[1][0]
-	}
-
-	if rect[0][1] > rect[1][1] {
-		yMin = rect[1][1]
-		yMax = rect[0][1]
-	} else {
-		yMin = rect[0][1]
-		yMax = rect[1][1]
-	}
+	xMin, xMax, yMin, yMax := getRectMinMax(rect)
 
 	return y <= yMax &&
 		y >= yMin &&

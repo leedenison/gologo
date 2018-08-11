@@ -48,6 +48,7 @@ type Primitive interface {
 	InitFromRenderer(r Renderer) error
 	GetInverseMass() float32
 	IsContainedInRect(obj Object, rect Rect) bool
+	OverlapsWithRect(obj Object, rect Rect) bool
 	Clone() Primitive
 }
 
@@ -94,29 +95,25 @@ func (c *Circle) GetInverseMass() float32 {
 }
 
 func (c *Circle) IsContainedInRect(obj Object, rect Rect) bool {
-	var xMin, xMax, yMin, yMax float32
 	x, y := obj.GetPosition()
 
-	if rect[0][0] > rect[1][0] {
-		xMin = rect[1][0]
-		xMax = rect[0][0]
-	} else {
-		xMin = rect[0][0]
-		xMax = rect[1][0]
-	}
-
-	if rect[0][1] > rect[1][1] {
-		yMin = rect[1][1]
-		yMax = rect[0][1]
-	} else {
-		yMin = rect[0][1]
-		yMax = rect[1][1]
-	}
+	xMin, xMax, yMin, yMax := getRectMinMax(rect)
 
 	return y+c.Radius <= yMax &&
 		y-c.Radius >= yMin &&
 		x+c.Radius <= xMax &&
 		x-c.Radius >= xMin
+}
+
+func (c *Circle) OverlapsWithRect(obj Object, rect Rect) bool {
+	x, y := obj.GetPosition()
+
+	xMin, xMax, yMin, yMax := getRectMinMax(rect)
+
+	return y-c.Radius <= yMax &&
+		y+c.Radius >= yMin &&
+		x-c.Radius <= xMax &&
+		x+c.Radius >= xMin
 }
 
 func (c *Circle) Clone() Primitive {

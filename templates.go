@@ -15,10 +15,11 @@ import (
 //
 
 type Template struct {
-	Name          string
-	Primitive     Primitive
-	Renderer      Renderer
-	CloneRenderer bool
+	Name                string
+	Primitive           Primitive
+	Renderer            Renderer
+	InitialisePrimitive bool
+	CloneRenderer       bool
 }
 
 func CreateTemplateObject(templateType string, model mgl32.Mat4) (*Object, error) {
@@ -32,6 +33,12 @@ func CreateTemplateObject(templateType string, model mgl32.Mat4) (*Object, error
 
 	if template.Primitive != nil {
 		object.SetPrimitive(template.Primitive, true)
+		if template.InitialisePrimitive == true {
+			err := object.InitialisePrimitive()
+			if err != nil {
+				return nil, errors.Wrap(err, "Failed to initialise primitive")
+			}
+		}
 	}
 
 	return object, nil
@@ -65,13 +72,13 @@ func configureTemplates() error {
 			Renderer:      renderer,
 			CloneRenderer: config.CloneRenderer,
 		}
-
 		if config.PhysicsPrimitiveConfig != nil {
 			primitive, err := config.PhysicsPrimitiveConfig.Create()
 			if err != nil {
 				return err
 			}
 			templates[config.Name].Primitive = primitive
+			templates[config.Name].InitialisePrimitive = config.InitialisePrimitive
 		}
 	}
 
@@ -91,6 +98,7 @@ type TemplateConfig struct {
 	PhysicsPrimitiveType   string
 	PhysicsPrimitive       json.RawMessage
 	PhysicsPrimitiveConfig PhysicsPrimitiveConfig
+	InitialisePrimitive    bool
 }
 
 type RendererConfig interface {
@@ -174,6 +182,9 @@ func loadConfig(resourcePath string) (*TemplateConfig, error) {
 				if err != nil {
 					return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
 				}
+			} else {
+				// Catch that we haven't initialised the primitive with values
+				parseResult.InitialisePrimitive = true
 			}
 			parseResult.PhysicsPrimitiveConfig = physicsConfig
 		} else {

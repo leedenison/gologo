@@ -44,7 +44,7 @@ func Tick() {
 //
 
 type Primitive interface {
-	InitFromMesh(mesh []float32) Primitive
+	InitFromMesh(mesh []float32)
 	GetInverseMass() float32
 	IsOnScreen(x float32, y float32) bool
 	Clone() Primitive
@@ -55,7 +55,7 @@ type Circle struct {
 	Radius      float32
 }
 
-func (c *Circle) InitFromMesh(mesh []float32) Primitive {
+func (c *Circle) InitFromMesh(mesh []float32) {
 	var minX, maxX, minY, maxY float64
 
 	for i := 0; i < len(mesh); i = i + glMeshStride {
@@ -74,10 +74,8 @@ func (c *Circle) InitFromMesh(mesh []float32) Primitive {
 		inverseMass = 1 / (area * areaToMassRatio)
 	}
 
-	return &Circle{
-		InverseMass: inverseMass,
-		Radius:      radius,
-	}
+	c.InverseMass = inverseMass
+	c.Radius = radius
 }
 
 func (c *Circle) GetInverseMass() float32 {

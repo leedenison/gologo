@@ -115,12 +115,6 @@ func (o *Object) GetPrimitive() Primitive {
 // SetPrimitive : Sets the primitive for this object, optionally cloning it
 // and deriving default values if needed
 func (o *Object) SetPrimitive(primitive Primitive, clone bool) error {
-	if primitive.GetInverseMass() == 0 {
-		// Primitive hasn't been set up, initialise it with defaults and
-		// store it in the object and ignore the clone var as it's new
-		return o.initialisePrimitive(primitive)
-	}
-
 	if clone {
 		o.Primitive = primitive.Clone()
 	} else {
@@ -130,11 +124,11 @@ func (o *Object) SetPrimitive(primitive Primitive, clone bool) error {
 	return nil
 }
 
-// initialisePrimitive : Creates a default primitive for this object.
+// InitialisePrimitive : Creates a default primitive for this object.
 // Will use the mesh to calculate the primitive
 // Will return an error if the Renderer is not set, the Renderer is not
 // of type MeshRenderer, or has no vertices
-func (o *Object) initialisePrimitive(primitive Primitive) error {
+func (o *Object) InitialisePrimitive() error {
 	if o.Renderer == nil {
 		return errors.New("object has no renderer")
 	}
@@ -148,7 +142,7 @@ func (o *Object) initialisePrimitive(primitive Primitive) error {
 		return errors.New("object renderer has no vertices")
 	}
 
-	o.Primitive = primitive.InitFromMesh(meshRenderer.MeshVertices)
+	o.Primitive.InitFromMesh(meshRenderer.MeshVertices)
 
 	return nil
 }

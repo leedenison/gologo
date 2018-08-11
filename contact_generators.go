@@ -63,13 +63,13 @@ func (cg *TaggedContactGenerator) UpdateContact(
 }
 
 func (cg *TaggedContactGenerator) GenerateContactData(
-	objectA *Object, objectB *Object) (mgl32.Vec4, mgl32.Vec4, float32) {
+	objectA *Object, objectB *Object) (mgl32.Vec3, mgl32.Vec3, float32) {
 	switch primitiveA := objectA.Primitive.(type) {
 	case *Circle:
 		switch primitiveB := objectB.Primitive.(type) {
 		case *Circle:
 			return CalcCircleCircleContact(
-				primitiveA, objectA.Model, primitiveB, objectB.Model)
+				primitiveA, objectA.Position, primitiveB, objectB.Position)
 		default:
 			panic(fmt.Sprintf("Unhandled primitive type: %t\n", objectB.Primitive))
 		}
@@ -139,46 +139,42 @@ func (cg *ScreenEdgeContactGenerator) UpdateContact(
 }
 
 func (cg *ScreenEdgeContactGenerator) GenerateContactData(
-	object *Object, direction ScreenDirection) (mgl32.Vec4, mgl32.Vec4, float32) {
+	object *Object, direction ScreenDirection) (mgl32.Vec3, mgl32.Vec3, float32) {
 	switch primitive := object.Primitive.(type) {
 	case *Circle:
-		position := object.Model.Col(3)
+		position := object.Position
 		switch direction {
 		case screenUp:
-			return mgl32.Vec4{
+			return mgl32.Vec3{
 					position.X(),
 					(float32(windowState.Height) + position.Y() + primitive.Radius) / 2,
 					0.0,
-					1.0,
 				},
-				mgl32.Vec4{0.0, -1.0, 0.0, 1.0},
+				mgl32.Vec3{0.0, -1.0, 0.0},
 				position.Y() + primitive.Radius - float32(windowState.Height)
 		case screenDown:
-			return mgl32.Vec4{
+			return mgl32.Vec3{
 					position.X(),
 					(position.Y() - primitive.Radius) / 2,
 					0.0,
-					1.0,
 				},
-				mgl32.Vec4{0.0, 1.0, 0.0, 1.0},
+				mgl32.Vec3{0.0, 1.0, 0.0},
 				primitive.Radius - position.Y()
 		case screenLeft:
-			return mgl32.Vec4{
+			return mgl32.Vec3{
 					(position.X() - primitive.Radius) / 2,
 					position.Y(),
 					0.0,
-					1.0,
 				},
-				mgl32.Vec4{1.0, 0.0, 0.0, 1.0},
+				mgl32.Vec3{1.0, 0.0, 0.0},
 				primitive.Radius - position.X()
 		case screenRight:
-			return mgl32.Vec4{
+			return mgl32.Vec3{
 					(float32(windowState.Width) + position.X() + primitive.Radius) / 2,
 					position.Y(),
 					0.0,
-					1.0,
 				},
-				mgl32.Vec4{-1.0, 0.0, 0.0, 1.0},
+				mgl32.Vec3{-1.0, 0.0, 0.0},
 				position.X() + primitive.Radius - float32(windowState.Width)
 		default:
 			panic(fmt.Sprintf("Unknown ScreenDirection: %v\n", direction))

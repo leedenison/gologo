@@ -63,7 +63,8 @@ func Rectangle(rect Rect, color mgl32.Vec4) *Object {
 	}
 
 	return &Object{
-		Model:    mgl32.Translate3D(originX, originY, 0.0),
+		Position: mgl32.Vec3{originX, originY, 0.0},
+		Scale:    1.0,
 		Creation: GetTickTime(),
 		ZOrder:   0,
 		Renderer: meshRenderer,
@@ -107,7 +108,8 @@ func Polygon(origin mgl32.Vec3, sides int, radius float32, color mgl32.Vec4) *Ob
 	}
 
 	return &Object{
-		Model:    mgl32.Translate3D(origin.X(), origin.Y(), origin.Z()),
+		Position: origin,
+		Scale:    1.0,
 		Creation: GetTickTime(),
 		ZOrder:   0,
 		Renderer: meshRenderer,

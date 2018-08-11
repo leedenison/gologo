@@ -122,20 +122,16 @@ func (maze *Maze) DoMove() {
 		if CanMove(maze, direction) {
 			switch direction {
 			case UP:
-				maze.Player.Model = mgl32.Translate3D(0, maze.RoomSize, 0).
-					Mul4(maze.Player.Model)
+				maze.Player.Position = maze.Player.Position.Add(mgl32.Vec3{0, maze.RoomSize, 0})
 				maze.PlayerPosition[1] += 1
 			case DOWN:
-				maze.Player.Model = mgl32.Translate3D(0, -maze.RoomSize, 0).
-					Mul4(maze.Player.Model)
+				maze.Player.Position = maze.Player.Position.Add(mgl32.Vec3{0, -maze.RoomSize, 0})
 				maze.PlayerPosition[1] -= 1
 			case LEFT:
-				maze.Player.Model = mgl32.Translate3D(-maze.RoomSize, 0, 0).
-					Mul4(maze.Player.Model)
+				maze.Player.Position = maze.Player.Position.Add(mgl32.Vec3{-maze.RoomSize, 0, 0})
 				maze.PlayerPosition[0] -= 1
 			case RIGHT:
-				maze.Player.Model = mgl32.Translate3D(maze.RoomSize, 0, 0).
-					Mul4(maze.Player.Model)
+				maze.Player.Position = maze.Player.Position.Add(mgl32.Vec3{maze.RoomSize, 0, 0})
 				maze.PlayerPosition[0] += 1
 			default:
 				panic(fmt.Sprintf("Unknown direction: %v\n", direction))
@@ -369,12 +365,11 @@ func initializeWalls(
 		for j := range result[i] {
 			result[i][j] = wall.Clone()
 			gologo.TagRender(result[i][j])
-			result[i][j].Model.SetCol(3, mgl32.Vec4{
+			result[i][j].Position = mgl32.Vec3{
 				mazeOffset[0] + float32(i)*roomSize + wallOffset[0],
 				mazeOffset[1] + float32(j)*roomSize + wallOffset[1],
 				0.0,
-				1.0,
-			})
+			}
 		}
 	}
 	return result

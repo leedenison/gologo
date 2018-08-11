@@ -22,13 +22,13 @@ type Template struct {
 	CloneRenderer       bool
 }
 
-func CreateTemplateObject(templateType string, model mgl32.Mat4) (*Object, error) {
+func CreateTemplateObject(templateType string, position mgl32.Vec3) (*Object, error) {
 	template, ok := templates[templateType]
 	if !ok {
 		return nil, errors.Errorf("invalid object template: %v", templateType)
 	}
 
-	object := CreateObject(model)
+	object := CreateObject(position)
 	object.SetRenderer(template.Renderer, template.CloneRenderer)
 
 	if template.Primitive != nil {

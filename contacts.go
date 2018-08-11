@@ -16,8 +16,8 @@ type Contact struct {
 	Objects               [2]*Object
 	ContactGenerator      ContactGenerator
 	GeneratorData         interface{}
-	ContactNormal         mgl32.Vec4
-	ContactPoint          mgl32.Vec4
+	ContactNormal         mgl32.Vec3
+	ContactPoint          mgl32.Vec3
 	PenetrationResolver   PenetrationResolver
 	Penetration           float32
 	PenetrationResolution *PenetrationResolution
@@ -118,21 +118,21 @@ func (p *PerpendicularPenetrationResolver) ResolvePenetration(contact *Contact) 
 		return
 	}
 
-	movePerInverseMass := contact.ContactNormal.Vec3()
+	movePerInverseMass := contact.ContactNormal
 	movePerInverseMass = movePerInverseMass.Mul(contact.Penetration / totalInverseMass)
 
 	movement := movePerInverseMass
 	movement = movement.Mul(inverseMass0)
-	translation := contact.Objects[0].Model.Col(3).Add(movement.Vec4(0.0))
-	contact.Objects[0].Model.SetCol(3, translation)
-	contact.PenetrationResolution[0] = translation.Vec3()
+	translation := contact.Objects[0].Position.Add(movement)
+	contact.Objects[0].Position = translation
+	contact.PenetrationResolution[0] = translation
 
 	if contact.Objects[1] != nil {
 		movement = movePerInverseMass
 		movement = movement.Mul(-inverseMass1)
-		translation = contact.Objects[1].Model.Col(3).Add(movement.Vec4(0.0))
-		contact.Objects[1].Model.SetCol(3, translation)
-		contact.PenetrationResolution[1] = translation.Vec3()
+		translation = contact.Objects[1].Position.Add(movement)
+		contact.Objects[1].Position = translation
+		contact.PenetrationResolution[1] = translation
 	}
 
 	contact.ContactGenerator.UpdateContact(contact, 0, contact, 0)

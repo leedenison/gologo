@@ -2,8 +2,6 @@ package gologo
 
 import (
 	"testing"
-
-	"github.com/go-gl/mathgl/mgl32"
 )
 
 // TestObjectCreation : Test basic Object creation by building the object
@@ -13,28 +11,42 @@ func TestObjectCreation(t *testing.T) {
 	defer Cleanup()
 	Init()
 
-	model := mgl32.Translate3D(200, 200, 0.0).Mul4(mgl32.Ident4().Mul4(mgl32.Ident4()))
+	LoadObjectTemplates()
 
-	obj := CreateObject(model)
-	obj.SetZOrder(1)
+	objBuilder := Builder()
+	objBuilder.
+		SetPosition(2, 2).
+		Build("BIG_BLUE_SQUARE")
+		/*
+			model := mgl32.Translate3D(200, 200, 0.0).Mul4(mgl32.Ident4().Mul4(mgl32.Ident4()))
 
-	// Create meshRenderer
-	meshRenderer := CreateMeshRenderer(
-		"ORTHO_VERTEX_SHADER",
-		"COLOR_FRAGMENT_SHADER",
-		[]int{uniformColor},
-		map[int]interface{ uniformColor }{mgl32.Vec4(1, 1, 1, 0)},
-		[]float32{
-			-1, -1, 0, 0, 1,
-			1, 1, 0, 1, 0,
-			-1, 1, 0, 0, 0,
-			-1, -1, 0, 0, 1,
-			1, -1, 0, 1, 1,
-			1, 1, 0, 1, 0,
-		},
-	)
+			obj := CreateObject(model)
+			obj.SetZOrder(1)
 
+			// Create meshRenderer
+			meshRenderer, err := CreateMeshRenderer(
+				"ORTHO_VERTEX_SHADER",
+				"COLOR_FRAGMENT_SHADER",
+				[]int{uniformColor},
+				map[int]interface{}{uniformColor: mgl32.Vec4{1, 0, 0, 0}},
+				[]float32{
+					-1, -1, 0, 0, 1,
+					1, 1, 0, 1, 0,
+					-1, 1, 0, 0, 0,
+					-1, -1, 0, 0, 1,
+					1, -1, 0, 1, 1,
+					1, 1, 0, 1, 0,
+				},
+			)
+
+			if err != nil {
+				errors.Wrapf(err, "Failed to create defaulted MeshRenderer (%v)", meshRenderer)
+				t.Error(err)
+			}
+
+			obj.SetRenderer(meshRenderer, true)
+			TagRender(obj)
+		*/
 	Run()
 	// From here directly query the object for correctness
-	return
 }

@@ -200,14 +200,12 @@ func loadConfig(resourcePath string) (*TemplateConfig, error) {
 //
 
 type CircleConfig struct {
-	Radius      float32
-	InverseMass float32
+	Radius float32
 }
 
 func (config *CircleConfig) Create() (Primitive, error) {
 	return &Circle{
-		Radius:      config.Radius,
-		InverseMass: config.InverseMass,
+		Radius: config.Radius,
 	}, nil
 }
 

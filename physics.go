@@ -41,19 +41,44 @@ func Tick() {
 }
 
 /////////////////////////////////////////////////////////////
+// Tags
+//
+
+func Integrate(duration float64) {
+	for _, object := range integrated {
+		object.Integrate(duration)
+	}
+}
+
+func TagIntegrate(object *Object) {
+	integrated = append(integrated, object)
+}
+
+func UntagIntegrate(object *Object) {
+	for i := 0; i < len(integrated); i++ {
+		if object == integrated[i] {
+			if len(integrated) > 1 {
+				integrated = append(integrated[:i], integrated[i+1:]...)
+			} else {
+				integrated = integrated[0:0]
+			}
+			i--
+		}
+	}
+}
+
+/////////////////////////////////////////////////////////////
 // Physics primitives
 //
 
 type Primitive interface {
 	InitFromRenderer(r Renderer) error
-	GetInverseMass() float32
 	IsContainedInRect(obj Object, rect Rect) bool
 	Clone() Primitive
 }
 
 type Circle struct {
-	InverseMass float32
-	Radius      float32
+	Radius float32
 }
 
 func (c *Circle) InitFromRenderer(r Renderer) error {
@@ -74,23 +99,12 @@ func (c *Circle) InitFromRenderer(r Renderer) error {
 		}
 
 		size := math.Max(maxX-minX, maxY-minY)
-		radius := float32((size * circleMeshSizeFactor) / 2)
-		area := math.Pi * radius * radius
-		inverseMass := float32(1)
-
-		if area > 0 {
-			inverseMass = 1 / (area * areaToMassRatio)
-		}
-		c.InverseMass = inverseMass
+		c.Radius = float32((size * circleMeshSizeFactor) / 2)
 	default:
 		return errors.New("failed to init renderer from unsupported type: %T")
 	}
 
 	return nil
-}
-
-func (c *Circle) GetInverseMass() float32 {
-	return c.InverseMass
 }
 
 func (c *Circle) IsContainedInRect(obj Object, rect Rect) bool {
@@ -138,4 +152,60 @@ func CalcCircleCircleContact(
 	contactNormal := v1.Normalize()
 
 	return contactPoint, contactNormal, penetration
+}
+
+/////////////////////////////////////////////////////////////
+// Physics Rigid Body
+//
+
+// RigidBody : Represents all rigid body physics data for an Object.
+// InverseMass is one divided by the mass of the Object.  Representing mass this way allows infinite mass to be represented easily.
+// InverseInertia is one divided by the rotational inertia of the Object around the z-axis.  Representing intertia this way allows infinite rotational inertial to be represented easily.
+// Velocity is the linear and rotational velocity of the Object.
+// LinearDamping is a damping constant applied to any linear acceleration of the Object.  Linear damping can be used to counteract the creation of energy due to simulation inaccuracies.
+// AngularDamping is a damping constant applied to any rotational acceleration of the Object.  Angular damping can be used to counteract the creation of energy due to simulation inaccuracies.
+// Forces accumulates the linear forces acting on the object during this simulation tick.
+// Torques accumulates the rotational forces acting on the object during this simulation tick.
+// Accelaration is the linear acceleration this object experienced during the this simulation tick.
+type RigidBody struct {
+	InverseMass     float64
+	InverseInertia  float64
+	LinearVelocity  mgl32.Vec3
+	AngularVelocity float64
+	LinearDamping   float64
+	AngularDamping  float64
+	Forces          mgl32.Vec3
+	Torques         float64
+	Acceleration    mgl32.Vec3
+}
+
+func (b *RigidBody) Integrate(duration float64) (mgl32.Vec3, float64) {
+	// Calculate acceleration due to accumulated forces
+	b.Acceleration = b.Forces.Mul(float32(b.InverseMass))
+	angularAccel := b.Torques * b.InverseInertia
+
+	// Update linear and angular velocity based on acceleration
+	b.LinearVelocity = b.LinearVelocity.Add(b.Acceleration)
+	b.AngularVelocity += angularAccel
+
+	// Calculate damping factors
+	linearDamping := float32(math.Pow(b.LinearDamping, duration))
+	angularDamping := math.Pow(b.AngularDamping, duration)
+
+	// Apply damping based on total linear and angular velocity
+	b.LinearVelocity.Mul(linearDamping)
+	b.AngularVelocity = b.AngularVelocity * angularDamping
+
+	return b.LinearVelocity, b.AngularVelocity
+}
+
+func (b *RigidBody) AccumulateForceAtLocalPoint(f mgl32.Vec3, p mgl32.Vec3) {
+	// Calculate the linear force applied through the centre of gravity
+	// This adds the entire force throught the center of gravity.  We might be able to do
+	// better.
+	b.Forces.Add(f)
+
+	// Calculate the rotational force applied around the z-axis
+	// Use the 2D analogue of cross product to calculate the magnitude of the torque
+	b.Torques += float64(p.X()*f.Y() - p.Y()*f.X())
 }

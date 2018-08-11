@@ -105,12 +105,12 @@ func (p *PerpendicularPenetrationResolver) ResolvePenetration(contact *Contact) 
 		return
 	}
 
-	inverseMass0 := contact.Objects[0].Primitive.GetInverseMass()
+	inverseMass0 := float32(contact.Objects[0].Body.InverseMass)
 	inverseMass1 := float32(0.0)
 	totalInverseMass := inverseMass0
 
 	if contact.Objects[1] != nil {
-		inverseMass1 = contact.Objects[1].Primitive.GetInverseMass()
+		inverseMass1 = float32(contact.Objects[1].Body.InverseMass)
 		totalInverseMass += inverseMass1
 	}
 

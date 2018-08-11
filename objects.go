@@ -23,6 +23,7 @@ type Object struct {
 	Creation    int
 	Primitive   Primitive
 	Renderer    Renderer
+ 	Body        *RigidBody
 }
 
 // CreateObject Main function to create a standard object
@@ -45,6 +46,14 @@ func (o *Object) GetModel() mgl32.Mat4 {
 // WorldSpace : Returns the world space point corresponding to the supplied object space co-ordinate
 func (o *Object) WorldSpace(c mgl32.Vec3) mgl32.Vec3 {
 	return o.GetModel().Mul4x1(c.Vec4(1.0)).Vec3()
+}
+
+// Integrate : Updates RigidBody velocity and then updates the Model matrix with the result
+func (o *Object) Integrate(duration float64) {
+	linear, angular := o.Body.Integrate(duration)
+	o.Position = o.Position.Add(linear)
+	// Normalize the orientation to be within the first 2 pi radians
+	o.Orientation = math.Mod(o.Orientation+angular, math.Pi*2)
 }
 
 // GetAge : Returns age of object since creation

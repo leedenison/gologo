@@ -43,7 +43,6 @@ func LoadObjectTemplates() {
 		Error.Fatalln("Failed to load resources:", err)
 	}
 
-	path = "C:\\code\\msys64\\home\\rob\\go\\screeps\\run\\res"
 	if err = loadConfigs(path); err != nil {
 		Error.Fatalln("Failed to load resources:", err)
 	}

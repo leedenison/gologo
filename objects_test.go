@@ -52,5 +52,4 @@ func TestObjectCreation(t *testing.T) {
 	TagRender(obj)
 
 	Run()
-	// From here directly query the object for correctness
 }

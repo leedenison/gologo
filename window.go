@@ -68,12 +68,8 @@ func GetWindowCenter() [2]float32 {
 }
 
 func GetResourcePath() (string, error) {
-	path, err := GetExecutablePath()
-	if err != nil {
-		return "", err
-	}
 
-	return path + pathSeparator + resourcePath, nil
+	return resourcePath, nil
 }
 
 func GetExecutablePath() (string, error) {

@@ -68,7 +68,6 @@ func GetWindowCenter() [2]float32 {
 }
 
 func GetResourcePath() (string, error) {
-
 	return resourcePath, nil
 }
 

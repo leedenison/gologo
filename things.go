@@ -204,6 +204,7 @@ func (t *Thing) Delete() {
 		return
 	}
 	UntagAll(t.Object)
+
 	UntagRender(t.Object)
 	delete(objectIndex, t.Object)
 	t.Object = nil

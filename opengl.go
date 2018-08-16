@@ -42,7 +42,7 @@ func CreateTexture(texturePath string) (*GLTexture, error) {
 	result, textureExists := glState.Textures[texturePath]
 	if !textureExists {
 		texture, sizeX, sizeY, err := loadTexture(
-			texturePath,
+			executablePath+pathSeparator+texturePath,
 			gl.TEXTURE0)
 		if err != nil {
 			return nil, err

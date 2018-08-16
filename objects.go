@@ -23,11 +23,11 @@ type Object struct {
 	Creation    int
 	Primitive   Primitive
 	Renderer    Renderer
- 	Body        *RigidBody
+	Body        *RigidBody
 }
 
 // CreateObject Main function to create a standard object
-// required a model to create an object
+// requires a position vector to create an object
 func CreateObject(position mgl32.Vec3) *Object {
 	return &Object{
 		Position: position,
@@ -80,7 +80,7 @@ func (o *Object) SetPositionVec2(p mgl32.Vec2) {
 // Translate : Move the position by the supplied X and Y values
 // relative to the current position
 func (o *Object) Translate(x float32, y float32) {
-	o.Position.Add(mgl32.Vec3{x, y, 0.0})
+	o.Position = o.Position.Add(mgl32.Vec3{x, y, 0.0})
 }
 
 // Direction : Return the angle the object has been rotated since it was created

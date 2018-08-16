@@ -1,0 +1,18 @@
+{
+    "Name": "BIG_BLUE_SQUARE",
+    "PhysicsPrimitiveType": "CIRCLE",
+    "RendererType": "MESH_RENDERER",
+    "Renderer": {
+        "VertexShader": "ORTHO_VERTEX_SHADER",
+        "FragmentShader": "COLOR_FRAGMENT_SHADER",
+        "Color": [ 0, 0, 1, 1 ],
+    	"MeshVertices": [
+            -100, -100, 0, 0, 1,
+            100, 100, 0, 1, 0,
+	        -100, 100, 0, 0, 0,
+	        -100, -100, 0, 0, 1,
+    	    100, -100, 0, 1, 1,
+    	    100, 100, 0, 1, 0
+    	]
+    }
+}

@@ -37,10 +37,11 @@ func CreateTemplateObject(templateType string, model mgl32.Mat4) (*Object, error
 	return object, nil
 }
 
-func LoadObjectTemplates() {
-	path, err := GetResourcePath()
-	if err != nil {
-		Error.Fatalln("Failed to load resources:", err)
+func LoadObjectTemplates(path string) {
+	var err error
+
+	if path == "" {
+		path = GetResourcePath()
 	}
 
 	if err = loadConfigs(path); err != nil {

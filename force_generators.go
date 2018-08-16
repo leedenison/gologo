@@ -4,6 +4,10 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+func RegisterForceGenerator(f ForceGenerator) {
+	forceGenerators = append(forceGenerators, f)
+}
+
 func ClearForces(objects []*Object) {
 	for _, o := range objects {
 		o.Body.Forces = mgl32.Vec3{0.0, 0.0, 0.0}
@@ -56,21 +60,17 @@ func (s *TwoBodySpring) AccumulateForce(duration float64) []*Object {
 	direction := end.Sub(start)
 
 	// Calculate the magnitude of the force
-	magnitude := mgl32.Abs(direction.Len()-s.RestLength) * s.SpringConstant
+	magnitude := (direction.Len()-s.RestLength) * s.SpringConstant
 
-	if magnitude > 0 {
-		direction = direction.Normalize()
+	direction = direction.Normalize()
 
-		// Calculate the force for Object1
-		force1 := direction.Mul(magnitude)
-		s.Object1.Body.AccumulateForceAtLocalPoint(force1, s.Connection1)
+	// Calculate the force for Object1
+	force1 := direction.Mul(magnitude)
+	s.Object1.Body.AccumulateForceAtLocalPoint(force1, s.Connection1)
 
-		// Calculate the force for Object2
-		force2 := direction.Mul(-magnitude)
-		s.Object2.Body.AccumulateForceAtLocalPoint(force2, s.Connection2)
+	// Calculate the force for Object2
+	force2 := direction.Mul(-magnitude)
+	s.Object2.Body.AccumulateForceAtLocalPoint(force2, s.Connection2)
 
-		return []*Object{s.Object1, s.Object2}
-	} else {
-		return []*Object{}
-	}
+	return []*Object{s.Object1, s.Object2}
 }

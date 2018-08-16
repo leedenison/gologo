@@ -193,7 +193,7 @@ func (b *RigidBody) Integrate(duration float64) (mgl32.Vec3, float64) {
 	angularDamping := math.Pow(b.AngularDamping, duration)
 
 	// Apply damping based on total linear and angular velocity
-	b.LinearVelocity.Mul(linearDamping)
+	b.LinearVelocity = b.LinearVelocity.Mul(linearDamping)
 	b.AngularVelocity = b.AngularVelocity * angularDamping
 
 	return b.LinearVelocity, b.AngularVelocity
@@ -203,7 +203,7 @@ func (b *RigidBody) AccumulateForceAtLocalPoint(f mgl32.Vec3, p mgl32.Vec3) {
 	// Calculate the linear force applied through the centre of gravity
 	// This adds the entire force throught the center of gravity.  We might be able to do
 	// better.
-	b.Forces.Add(f)
+	b.Forces = b.Forces.Add(f)
 
 	// Calculate the rotational force applied around the z-axis
 	// Use the 2D analogue of cross product to calculate the magnitude of the torque

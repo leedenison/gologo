@@ -66,16 +66,19 @@ func LoadObjectTemplates(path string) {
 
 func configureTemplates() error {
 	for _, config := range configs {
-		renderer, err := config.RendererConfig.Create()
-		if err != nil {
-			return err
+		templates[config.Name] = &Template{
+			Name: config.Name,
 		}
 
-		templates[config.Name] = &Template{
-			Name:          config.Name,
-			Renderer:      renderer,
-			CloneRenderer: config.CloneRenderer,
+		if config.RendererConfig != nil {
+			renderer, err := config.RendererConfig.Create()
+			if err != nil {
+				return err
+			}
+			templates[config.Name].Renderer = renderer
+			templates[config.Name].CloneRenderer = config.CloneRenderer
 		}
+
 		if config.PhysicsPrimitiveConfig != nil {
 			primitive, err := config.PhysicsPrimitiveConfig.Create()
 			if err != nil {
@@ -165,16 +168,18 @@ func loadConfig(resourcePath string) (*TemplateConfig, error) {
 		return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
 	}
 
-	if rendererType, exists := rendererTypes[parseResult.RendererType]; exists {
-		untypedConfig := reflect.New(rendererType).Elem().Addr().Interface()
-		rendererConfig := untypedConfig.(RendererConfig)
-		err = json.Unmarshal(parseResult.Renderer, rendererConfig)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
+	if parseResult.RendererType != "" && parseResult.RendererType != "NONE" {
+		if rendererType, exists := rendererTypes[parseResult.RendererType]; exists {
+			untypedConfig := reflect.New(rendererType).Elem().Addr().Interface()
+			rendererConfig := untypedConfig.(RendererConfig)
+			err = json.Unmarshal(parseResult.Renderer, rendererConfig)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Failed to parse renderer config: %s", resourcePath)
+			}
+			parseResult.RendererConfig = rendererConfig
+		} else {
+			return nil, errors.Errorf("Unknown RenderType: %v\n", parseResult.RendererType)
 		}
-		parseResult.RendererConfig = rendererConfig
-	} else {
-		return nil, errors.Errorf("Unknown RenderType: %v\n", parseResult.RendererType)
 	}
 
 	if parseResult.PhysicsPrimitiveType != "" && parseResult.PhysicsPrimitiveType != "NONE" {
@@ -184,7 +189,7 @@ func loadConfig(resourcePath string) (*TemplateConfig, error) {
 			if parseResult.PhysicsPrimitive != nil {
 				err = json.Unmarshal(parseResult.PhysicsPrimitive, &physicsConfig)
 				if err != nil {
-					return nil, errors.Wrapf(err, "Failed to parse resource: %s", resourcePath)
+					return nil, errors.Wrapf(err, "Failed to parse primitive config: %s", resourcePath)
 				}
 			} else {
 				// Catch that we haven't initialised the primitive with values

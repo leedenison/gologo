@@ -1,7 +1,7 @@
 {
     "Name": "BIG_BLUE_SQUARE",
-    "PhysicsPrimitiveType": "CIRCLE",
-    "RendererType": "MESH_RENDERER",
+    "PhysicsPrimitiveType": "NONE",
+    "RendererType": "NONE",
     "Renderer": {
         "VertexShader": "ORTHO_VERTEX_SHADER",
         "FragmentShader": "COLOR_FRAGMENT_SHADER",

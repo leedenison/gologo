@@ -194,7 +194,12 @@ func (t *Thing) IsOnScreen() bool {
 
 	rect := Rect{{0, 0}, GetWindowSize()}
 
-	return t.Object.IsContainedInRect(rect)
+	if primitive := t.Object.GetPrimitive(); primitive != nil {
+		return primitive.OverlapsWithRect(*t.Object, rect)
+	}
+
+	// use if the origin is contained as an approximation
+	return t.Object.OriginIsContainedInRect(rect)
 }
 
 // Delete : Deletes Thing's object and removes it's tags and it from the object list

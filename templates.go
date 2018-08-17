@@ -44,6 +44,9 @@ func CreateTemplateObject(templateType string, position mgl32.Vec3) (*Object, er
 	return object, nil
 }
 
+// LoadObjectTemplates : read the object config files and
+// build the templates. If the supplied path is empty string
+// then use the default path
 func LoadObjectTemplates(path string) {
 	var err error
 

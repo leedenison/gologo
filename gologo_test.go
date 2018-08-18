@@ -1,12 +1,13 @@
 package gologo
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
 )
 
 func testSetup() {
-	InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
+	InitLogger(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 }
 
 func TestMain(m *testing.M) {

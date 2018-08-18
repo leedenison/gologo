@@ -1,9 +1,8 @@
 package gologo
 
 import (
-	"testing"
-
 	"reflect"
+	"testing"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -14,8 +13,8 @@ var createTOTests = []struct {
 	primitiveExp Primitive
 	rendererExp  Renderer
 }{
-	{"SIMPLE_OBJECT", 200, 200, nil, nil},
-	{"PRIM_OBJECT", 200, 200, &Circle{Radius: 50}, nil},
+	{"SIMPLE_OBJECT", 200, 300, nil, nil},
+	{"PRIM_OBJECT", 200, 300, &Circle{Radius: 50}, nil},
 }
 
 // TestCreateTemplateObject : Test basic Object creation by building the object
@@ -54,16 +53,13 @@ func TestCreateTemplateObject(t *testing.T) {
 
 		// Check primitive
 		prim = obj.GetPrimitive()
-
-		if prim != tt.primitiveExp {
-			Info.Printf("prim type is (%v)", reflect.TypeOf(prim))
-			Info.Printf("exp type is (%v)", reflect.TypeOf(tt.primitiveExp))
+		if !reflect.DeepEqual(prim, tt.primitiveExp) {
 			t.Errorf("Primitive is (%+v) should be (%+v)", prim, tt.primitiveExp)
 		}
 
 		// Check renderer
 		rend = obj.GetRenderer()
-		if rend != tt.rendererExp {
+		if !reflect.DeepEqual(rend, tt.rendererExp) {
 			t.Errorf("Renderer is (%+v) should be (%+v)", rend, tt.rendererExp)
 		}
 	}

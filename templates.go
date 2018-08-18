@@ -29,7 +29,10 @@ func CreateTemplateObject(templateType string, position mgl32.Vec3) (*Object, er
 	}
 
 	object := CreateObject(position)
-	object.SetRenderer(template.Renderer, template.CloneRenderer)
+
+	if template.Renderer != nil {
+		object.SetRenderer(template.Renderer, template.CloneRenderer)
+	}
 
 	if template.Primitive != nil {
 		object.SetPrimitive(template.Primitive, true)

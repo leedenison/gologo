@@ -20,7 +20,7 @@ var createTOTests = []struct {
 // A simple object has no renderer
 func TestCreateTemplateObject(t *testing.T) {
 	var position mgl32.Vec3
-	var obj Object
+	var obj *Object
 	var prim Primitive
 	var rend Renderer
 	var err error
@@ -30,10 +30,10 @@ func TestCreateTemplateObject(t *testing.T) {
 	LoadObjectTemplates("testdata" + pathSeparator + "res")
 
 	for _, tt := range createTOTests {
-		position = mgl32.Vec3{tt.posX, tt.PosY, 0.0}
+		position = mgl32.Vec3{tt.posX, tt.posY, 0.0}
 		obj, err = CreateTemplateObject(tt.templateType, position)
 		if err != nil {
-			t.Errorf("Obj (%v) create failed with error: ", tt.templateType, err)
+			t.Errorf("Obj (%v) create failed with error: %v", tt.templateType, err)
 		}
 
 		// Test object has age
@@ -56,7 +56,7 @@ func TestCreateTemplateObject(t *testing.T) {
 		}
 
 		// Check renderer
-		rend = obj.GetPrimitive()
+		rend = obj.GetRenderer()
 		if rend != tt.rendererExp {
 			t.Errorf("Renderer is (%+v) should be (%+v)", rend, tt.rendererExp)
 		}

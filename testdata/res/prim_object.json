@@ -1,0 +1,8 @@
+{
+    "Name": "PRIM_OBJECT",
+    "PhysicsPrimitiveType": "CIRCLE",
+    "PhysicsPrimitive": {
+        "Radius": 50.0
+    },
+    "RendererType": "NONE"
+}

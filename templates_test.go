@@ -3,6 +3,8 @@ package gologo
 import (
 	"testing"
 
+	"reflect"
+
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -12,7 +14,8 @@ var createTOTests = []struct {
 	primitiveExp Primitive
 	rendererExp  Renderer
 }{
-	{"BIG_BLUE_SQUARE", 200, 200, nil, nil},
+	{"SIMPLE_OBJECT", 200, 200, nil, nil},
+	{"PRIM_OBJECT", 200, 200, &Circle{Radius: 50}, nil},
 }
 
 // TestCreateTemplateObject : Test basic Object creation by building the object
@@ -38,7 +41,7 @@ func TestCreateTemplateObject(t *testing.T) {
 
 		// Test object has age
 		age = obj.GetAge()
-		if age <= 0 {
+		if age < 0 {
 			t.Errorf("Age was (%v) should not be negative", age)
 		}
 
@@ -51,7 +54,10 @@ func TestCreateTemplateObject(t *testing.T) {
 
 		// Check primitive
 		prim = obj.GetPrimitive()
+
 		if prim != tt.primitiveExp {
+			Info.Printf("prim type is (%v)", reflect.TypeOf(prim))
+			Info.Printf("exp type is (%v)", reflect.TypeOf(tt.primitiveExp))
 			t.Errorf("Primitive is (%+v) should be (%+v)", prim, tt.primitiveExp)
 		}
 

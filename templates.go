@@ -163,7 +163,7 @@ func loadConfig(resourcePath string) (*TemplateConfig, error) {
 
 	resourceJSON, err := ioutil.ReadFile(resourcePath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to load resource: %s", resourcePath)
+		return nil, errors.Wrapf(err, "Failed to read resource file: %s", resourcePath)
 	}
 
 	err = json.Unmarshal(resourceJSON, &parseResult)

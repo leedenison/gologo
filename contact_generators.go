@@ -11,6 +11,15 @@ type ContactGenerator interface {
 	UpdateContact(contact *Contact, contactIdx int, resolved *Contact, resolvedIdx int)
 }
 
+type ScreenDirection int
+
+const (
+	screenUp ScreenDirection = iota
+	screenDown
+	screenLeft
+	screenRight
+)
+
 /////////////////////////////////////////////////////////////
 // TaggedContactGenerator
 //

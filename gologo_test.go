@@ -4,10 +4,12 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/leedenison/gologo/log"
 )
 
 func testSetup() {
-	InitLogger(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
+	log.InitLogger(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
 }
 
 func TestMain(m *testing.M) {

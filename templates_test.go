@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/leedenison/gologo/render"
 )
 
 var createTOTests = []struct {
 	templateType string
 	posX, posY   float32
 	primitiveExp Primitive
-	rendererExp  Renderer
+	rendererExp  render.Renderer
 }{
 	{"SIMPLE_OBJECT", 200, 300, nil, nil},
 	{"PRIM_OBJECT", 200, 300, &Circle{Radius: 50}, nil},
@@ -24,7 +25,7 @@ func TestCreateTemplateObject(t *testing.T) {
 	var position mgl32.Vec3
 	var obj *Object
 	var prim Primitive
-	var rend Renderer
+	var rend render.Renderer
 	var err error
 	var age int
 	var x, y float32

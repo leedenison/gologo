@@ -3,8 +3,12 @@ package gologo
 import (
 	"os"
 	"runtime"
+	"sort"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/leedenison/gologo/log"
+	"github.com/leedenison/gologo/opengl"
+	"github.com/leedenison/gologo/time"
 )
 
 func init() {
@@ -15,47 +19,46 @@ func init() {
 
 func Init() {
 	// Use ioutil.Discard to disable
-	InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
+	log.InitLogger(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
 
 	if err := InitWindow(); err != nil {
-		Error.Fatalln("window.Init failed:", err)
+		log.Error.Fatalln("window.Init failed:", err)
 	}
 
 	if err := CreateWindow(title); err != nil {
-		Error.Fatalln("window.CreateWindow failed:", err)
+		log.Error.Fatalln("window.CreateWindow failed:", err)
 	}
 
-	UpdateWindowProjection()
+	opengl.UpdateProjection(float32(windowState.Width), float32(windowState.Height))
 
-	if err := InitRender(); err != nil {
-		Error.Fatalln("render.Init failed:", err)
+	if err := opengl.InitOpenGL(); err != nil {
+		log.Error.Fatalln("opengl.InitOpenGL failed:", err)
 	}
 
-	if err := InitTick(); err != nil {
-		Error.Fatalln("physics.Init failed:", err)
+	if err := time.InitTick(); err != nil {
+		log.Error.Fatalln("time.InitTick failed:", err)
 	}
 }
 
 func Run() {
-	// TODO: Add close action for quit key pressed
 	for !windowState.Main.ShouldClose() {
-		ClearBackBuffer()
-		Tick()
+		opengl.ClearBackBuffer()
+		time.Tick()
 
 		if apiCallback != nil {
-			apiCallback(GetTime())
+			apiCallback(time.GetTime())
 		}
 
 		ClearForces(integrated)
-		GenerateForces(tick.Interval)
-		Integrate(tick.Interval)
+		GenerateForces(time.TimeState.Interval)
+		Integrate(time.TimeState.Interval)
 		ResolveContacts(GenerateContacts())
 		Render()
 
 		glfw.PollEvents()
 	}
 
-	Trace.Println("Exiting.")
+	log.Trace.Println("Exiting.")
 	return
 }
 
@@ -104,4 +107,33 @@ func SetScreenEdgeTag(tag string) {
 			Tag:                 tag,
 			PenetrationResolver: &PerpendicularPenetrationResolver{},
 		})
+}
+
+// TODO(leedenison): Add duration to render for animate.
+func Render() {
+	// Sort the objects by the rendering zorder
+	sort.Sort(ByZOrder(rendered))
+	for _, object := range rendered {
+		object.Renderer.Animate(object.GetModel())
+		//object.Renderer.DebugRender(object.GetModel())
+		object.Renderer.Render(object.GetModel())
+	}
+	windowState.Main.SwapBuffers()
+}
+
+func TagRender(object *Object) {
+	rendered = append(rendered, object)
+}
+
+func UntagRender(object *Object) {
+	for i := 0; i < len(rendered); i++ {
+		if object == rendered[i] {
+			if len(rendered) > 1 {
+				rendered = append(rendered[:i], rendered[i+1:]...)
+			} else {
+				rendered = rendered[0:0]
+			}
+			i--
+		}
+	}
 }

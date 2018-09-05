@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/leedenison/gologo/log"
 )
 
 var objectIndex = map[*Object]*Thing{}
@@ -46,7 +47,7 @@ func ShowAllThings(prefix string) {
 			positionX := (i%objectsPerRow + 1) * objectSpace
 			positionY := (i/objectsPerRow + 1) * objectSpace
 
-			Trace.Printf("Building thing(%v) at: %v, %v\n", name, positionX, positionY)
+			log.Trace.Printf("Building thing(%v) at: %v, %v\n", name, positionX, positionY)
 			Builder().SetPosition(positionX, positionY).Build(name)
 
 			i++

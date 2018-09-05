@@ -3,42 +3,13 @@ package gologo
 import (
 	"math"
 
-	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/leedenison/gologo/opengl"
+	"github.com/leedenison/gologo/render"
 	"github.com/pkg/errors"
 )
 
-/////////////////////////////////////////////////////////////
-// Tick
-//
-
-type TickState struct {
-	Zero     float64
-	Start    float64
-	End      float64
-	Interval float64
-}
-
-func InitTick() error {
-	tick.Zero = glfw.GetTime()
-	tick.End = tick.Zero
-
-	return nil
-}
-
-func GetTime() int {
-	return int(1000 * (glfw.GetTime() - tick.Zero))
-}
-
-func GetTickTime() int {
-	return int(1000 * (tick.End - tick.Zero))
-}
-
-func Tick() {
-	time := glfw.GetTime()
-	tick.Interval = time - tick.End
-	tick.End = time
-}
+type Rect [2][2]float32
 
 /////////////////////////////////////////////////////////////
 // Tags
@@ -72,7 +43,7 @@ func UntagIntegrate(object *Object) {
 //
 
 type Primitive interface {
-	InitFromRenderer(r Renderer) error
+	InitFromRenderer(r render.Renderer) error
 	IsContainedInRect(obj Object, rect Rect) bool
 	OverlapsWithRect(obj Object, rect Rect) bool
 	Clone() Primitive
@@ -82,9 +53,9 @@ type Circle struct {
 	Radius float32
 }
 
-func (c *Circle) InitFromRenderer(r Renderer) error {
+func (c *Circle) InitFromRenderer(r render.Renderer) error {
 	switch renderer := r.(type) {
-	case *MeshRenderer:
+	case *opengl.MeshRenderer:
 		if renderer.VertexCount == 0 {
 			return errors.New("object's meshRenderer has no vertices")
 		}
@@ -92,7 +63,7 @@ func (c *Circle) InitFromRenderer(r Renderer) error {
 		var minX, maxX, minY, maxY float64
 		mesh := renderer.MeshVertices
 
-		for i := 0; i < len(mesh); i = i + glMeshStride {
+		for i := 0; i < len(mesh); i = i + opengl.GlMeshStride {
 			minX = math.Min(minX, float64(mesh[i]))
 			maxX = math.Max(maxX, float64(mesh[i]))
 			minY = math.Min(minY, float64(mesh[i+1]))

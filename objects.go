@@ -4,6 +4,8 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/leedenison/gologo/render"
+	"github.com/leedenison/gologo/time"
 	"github.com/pkg/errors"
 )
 
@@ -22,7 +24,7 @@ type Object struct {
 	ZOrder      int
 	Creation    int
 	Primitive   Primitive
-	Renderer    Renderer
+	Renderer    render.Renderer
 	Body        *RigidBody
 }
 
@@ -31,7 +33,7 @@ type Object struct {
 func CreateObject(position mgl32.Vec3) *Object {
 	return &Object{
 		Position: position,
-		Creation: GetTickTime(),
+		Creation: time.GetTickTime(),
 	}
 }
 
@@ -58,7 +60,7 @@ func (o *Object) Integrate(duration float64) {
 
 // GetAge : Returns age of object since creation
 func (o *Object) GetAge() int {
-	return GetTickTime() - o.Creation
+	return time.GetTickTime() - o.Creation
 }
 
 // GetPosition : Returns X and Y co-ords of object centre in 2D
@@ -122,12 +124,12 @@ func (o *Object) SetZOrder(z int) {
 }
 
 // GetRenderer : Returns the renderer for this object
-func (o *Object) GetRenderer() Renderer {
+func (o *Object) GetRenderer() render.Renderer {
 	return o.Renderer
 }
 
 // SetRenderer : Sets the renderer for this object, optionally cloning it
-func (o *Object) SetRenderer(renderer Renderer, clone bool) {
+func (o *Object) SetRenderer(renderer render.Renderer, clone bool) {
 	if clone {
 		o.Renderer = renderer.Clone()
 	} else {

@@ -111,8 +111,14 @@ func (o *Object) DirectionOf(other *Object) float64 {
 }
 
 // Rotate : Rotate the object by the supplied angle in radians
-func (o *Object) Rotate(angle float32) {
-	o.Orientation = math.Mod(o.Orientation+float64(angle), math.Pi*2)
+func (o *Object) Rotate(angle float64) {
+	o.Orientation = math.Mod(o.Orientation+angle, math.Pi*2)
+}
+
+// GetZOrder : Returns the height of the object in 3D space
+// as an integer compared with other objects
+func (o *Object) GetZOrder() int {
+	return o.ZOrder
 }
 
 // SetZOrder : Sets the height of the object in 3D space

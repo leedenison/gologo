@@ -152,7 +152,7 @@ func (t *Thing) TurnClockwise(angle int) {
 		return
 	}
 
-	t.Object.Rotate(float32(-angle))
+	t.Object.Rotate(float64(-angle))
 }
 
 // TurnAntiClockwise : Rotates Thing anti-clockwise by angle degrees
@@ -161,7 +161,7 @@ func (t *Thing) TurnAntiClockwise(angle int) {
 		return
 	}
 
-	t.Object.Rotate(float32(angle))
+	t.Object.Rotate(float64(angle))
 }
 
 // Direction : Returns the angle the object has been rotated since it was

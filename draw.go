@@ -5,6 +5,8 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/leedenison/gologo/opengl"
+	"github.com/leedenison/gologo/time"
 )
 
 func Rectangle(rect Rect, color mgl32.Vec4) *Object {
@@ -50,12 +52,12 @@ func Rectangle(rect Rect, color mgl32.Vec4) *Object {
 		0.0,
 	}
 
-	meshRenderer, err := CreateMeshRenderer(
+	meshRenderer, err := opengl.CreateMeshRenderer(
 		"ORTHO_VERTEX_SHADER",
 		"COLOR_FRAGMENT_SHADER",
-		[]int{uniformColor},
+		[]int{opengl.UniformColor},
 		map[int]interface{}{
-			uniformColor: color,
+			opengl.UniformColor: color,
 		},
 		meshVertices)
 	if err != nil {
@@ -65,7 +67,7 @@ func Rectangle(rect Rect, color mgl32.Vec4) *Object {
 	return &Object{
 		Position: mgl32.Vec3{originX, originY, 0.0},
 		Scale:    1.0,
-		Creation: GetTickTime(),
+		Creation: time.GetTickTime(),
 		ZOrder:   0,
 		Renderer: meshRenderer,
 	}
@@ -95,12 +97,12 @@ func Polygon(origin mgl32.Vec3, sides int, radius float32, color mgl32.Vec4) *Ob
 		meshVertices = append(meshVertices, 0.0, 0.0, 0.0, 0.5, 0.5)
 	}
 
-	meshRenderer, err := CreateMeshRenderer(
+	meshRenderer, err := opengl.CreateMeshRenderer(
 		"ORTHO_VERTEX_SHADER",
 		"COLOR_FRAGMENT_SHADER",
-		[]int{uniformColor},
+		[]int{opengl.UniformColor},
 		map[int]interface{}{
-			uniformColor: color,
+			opengl.UniformColor: color,
 		},
 		meshVertices)
 	if err != nil {
@@ -110,7 +112,7 @@ func Polygon(origin mgl32.Vec3, sides int, radius float32, color mgl32.Vec4) *Ob
 	return &Object{
 		Position: origin,
 		Scale:    1.0,
-		Creation: GetTickTime(),
+		Creation: time.GetTickTime(),
 		ZOrder:   0,
 		Renderer: meshRenderer,
 	}

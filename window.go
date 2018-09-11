@@ -5,17 +5,9 @@ import (
 	"path/filepath"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/leedenison/gologo/log"
+	"github.com/leedenison/gologo/time"
 )
-
-func init() {
-	windowState.Width = defaultWinSizeX
-	windowState.Height = defaultWinSizeY
-
-	_, err := GetExecutablePath()
-	if err != nil {
-		Error.Fatalln("Failed to determine executable path:", err)
-	}
-}
 
 type WindowState struct {
 	Main   *glfw.Window
@@ -23,9 +15,19 @@ type WindowState struct {
 	Height int
 }
 
+func init() {
+	windowState.Width = defaultWinSizeX
+	windowState.Height = defaultWinSizeY
+
+	_, err := GetExecutablePath()
+	if err != nil {
+		log.Error.Fatalln("Failed to determine executable path:", err)
+	}
+}
+
 func InitWindow() error {
 	if err := glfw.Init(); err != nil {
-		Error.Println("glfw.Init failed:", err)
+		log.Error.Println("glfw.Init failed:", err)
 		return err
 	}
 
@@ -46,7 +48,7 @@ func CreateWindow(title string) error {
 
 	window, err := glfw.CreateWindow(windowState.Width, windowState.Height, title, nil, nil)
 	if err != nil {
-		Error.Println("glfw.CreateWindow failed:", err)
+		log.Error.Println("glfw.CreateWindow failed:", err)
 	}
 
 	windowState.Main = window
@@ -92,8 +94,8 @@ func KeyCallback(
 	if action == glfw.Press && key == glfw.KeyEscape {
 		window.SetShouldClose(true)
 	} else if keyPressedCallback != nil && action == glfw.Press {
-		keyPressedCallback(GetTickTime(), Key(key))
+		keyPressedCallback(time.GetTickTime(), Key(key))
 	} else if keyReleasedCallback != nil && action == glfw.Release {
-		keyReleasedCallback(GetTickTime(), Key(key))
+		keyReleasedCallback(time.GetTickTime(), Key(key))
 	}
 }

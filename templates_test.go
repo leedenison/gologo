@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-test/deep"
-	"github.com/leedenison/gologo/mocks"
+	"github.com/leedenison/gologo/fakes"
 	"github.com/leedenison/gologo/opengl"
 	"github.com/leedenison/gologo/render"
 )
@@ -42,7 +42,7 @@ func TestCreateTemplateObject(t *testing.T) {
 
 	LoadObjectTemplates("testdata" + pathSeparator + "res")
 
-	opengl.CreateMeshRenderer = mocks.CreateVerticesOnlyMeshRendererImpl
+	opengl.CreateMeshRenderer = fakes.CreateVerticesOnlyMeshRendererImpl
 
 	for _, tc := range createTOTests {
 		t.Run(tc.name, func(t *testing.T) {

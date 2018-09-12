@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/leedenison/gologo/mocks"
+	"github.com/leedenison/gologo/fakes"
 	"github.com/leedenison/gologo/opengl"
 )
 
@@ -118,7 +118,7 @@ func TestCircleFromRenderer(t *testing.T) {
 	var renderer *opengl.MeshRenderer
 	var err error
 
-	opengl.CreateMeshRenderer = mocks.CreateVerticesOnlyMeshRendererImpl
+	opengl.CreateMeshRenderer = fakes.CreateVerticesOnlyMeshRendererImpl
 
 	for _, tc := range circleFromRendererTests {
 		t.Run(tc.name, func(t *testing.T) {

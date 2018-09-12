@@ -316,7 +316,7 @@ func (r *MeshRenderer) Clone() render.Renderer {
 	}
 }
 
-// CreateMeshRenderer : Creates a MeshRenderer.  uniforms specifies all uniform variable locations that
+// CreateMeshRendererImpl : Creates a MeshRenderer.  uniforms specifies all uniform variable locations that
 // should be bound in the shader program, including both uniforms with a statically
 // defined value and those supplied in each call to RenderAt.  uniformValues
 // specifies static values for some or all of the uniforms.

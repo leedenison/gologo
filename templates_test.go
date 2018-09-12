@@ -5,63 +5,73 @@ import (
 	"testing"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-test/deep"
+	"github.com/leedenison/gologo/mocks"
+	"github.com/leedenison/gologo/opengl"
 	"github.com/leedenison/gologo/render"
 )
 
 var createTOTests = []struct {
-	templateType string
-	posX, posY   float32
-	primitiveExp Primitive
-	rendererExp  render.Renderer
+	name, templateType string
+	posX, posY         float32
+	primitiveExp       Primitive
+	rendererExp        render.Renderer
+	errExp             error
 }{
-	{"SIMPLE_OBJECT", 200, 300, nil, nil},
-	{"PRIM_OBJECT", 200, 300, &Circle{Radius: 50}, nil},
+	{"simple object", "SIMPLE_OBJECT", 200, 300, nil, nil, nil},
+	{"defined circle", "CIRCLE_OBJECT", 200, 300, &Circle{Radius: 50}, nil, nil},
+	{"undefined circle and renderer", "UNDEF_CIRCLE_REND_OBJECT", 200, 300,
+		&Circle{Radius: 65},
+		&opengl.MeshRenderer{Shader: nil, Mesh: 0, Uniforms: nil,
+			MeshVertices: []float32{-100, -100, 0, 0, 1, 100, 100, 0, 1, 0,
+				-100, 100, 0, 0, 0, -100, -100, 0, 0, 1,
+				100, -100, 0, 1, 1, 100, 100, 0, 1, 0},
+			VertexCount: 6}, nil},
 }
 
-// TestCreateTemplateObject : Test basic Object creation by building the object
+// TestCreateTemplateObject : Test Object creation by building the object
 // from a template then reading values back out to confirm
-// A simple object has no renderer
 func TestCreateTemplateObject(t *testing.T) {
 	var position mgl32.Vec3
 	var obj *Object
 	var prim Primitive
 	var rend render.Renderer
 	var err error
-	var age int
 	var x, y float32
+	var diff []string
 
 	LoadObjectTemplates("testdata" + pathSeparator + "res")
 
-	for _, tt := range createTOTests {
-		position = mgl32.Vec3{tt.posX, tt.posY, 0.0}
-		obj, err = CreateTemplateObject(tt.templateType, position)
-		if err != nil {
-			t.Errorf("Obj (%v) create failed with error: %v", tt.templateType, err)
-		}
+	opengl.CreateMeshRenderer = mocks.CreateVerticesOnlyMeshRendererImpl
 
-		// Test object has age
-		age = obj.GetAge()
-		if age < 0 {
-			t.Errorf("Age was (%v) should not be negative", age)
-		}
+	for _, tc := range createTOTests {
+		t.Run(tc.name, func(t *testing.T) {
+			position = mgl32.Vec3{tc.posX, tc.posY, 0.0}
+			obj, err = CreateTemplateObject(tc.templateType, position)
+			if err != tc.errExp {
+				t.Errorf("Create object error was (%v) error should have been (%v)", err, tc.errExp)
+			}
 
-		// Test position
-		x, y = obj.GetPosition()
-		if x != tt.posX || y != tt.posY {
-			t.Errorf("Location was x (%v), y (%v) should be x (%v), y (%v)",
-				x, y, tt.posX, tt.posY)
-		}
+			// Test position
+			x, y = obj.GetPosition()
+			if x != tc.posX || y != tc.posY {
+				t.Errorf("Location was x (%v), y (%v) should be x (%v), y (%v)",
+					x, y, tc.posX, tc.posY)
+			}
 
-		// Check primitive
-		prim = obj.GetPrimitive()
-		if !reflect.DeepEqual(prim, tt.primitiveExp) {
-			t.Errorf("Primitive is (%+v) should be (%+v)", prim, tt.primitiveExp)
-		}
+			// Check primitive
+			prim = obj.GetPrimitive()
+			if !reflect.DeepEqual(prim, tc.primitiveExp) {
+				t.Errorf("Primitive is (%+v) should be (%+v)", prim, tc.primitiveExp)
+			}
 
-		// Check renderer
-		rend = obj.GetRenderer()
-		if !reflect.DeepEqual(rend, tt.rendererExp) {
-			t.Errorf("Renderer is (%+v) should be (%+v)", rend, tt.rendererExp)
-		}
+			// Check renderer
+			rend = obj.GetRenderer()
+
+			diff = deep.Equal(rend, tc.rendererExp)
+			if diff != nil {
+				t.Error("Generated renderer is different:", diff)
+			}
+		})
 	}
 }

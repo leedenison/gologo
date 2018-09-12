@@ -1,5 +1,5 @@
 {
-    "Name": "PRIM_OBJECT",
+    "Name": "CIRCLE_OBJECT",
     "PhysicsPrimitiveType": "CIRCLE",
     "PhysicsPrimitive": {
         "Radius": 50.0

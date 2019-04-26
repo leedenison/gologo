@@ -62,6 +62,11 @@ func GetWindowSize() [2]float32 {
 	return [2]float32{float32(windowState.Width), float32(windowState.Height)}
 }
 
+func SetWindowSize(s [2]int) {
+	windowState.Width = s[0]
+	windowState.Height = s[1]
+}
+
 func GetWindowCenter() [2]float32 {
 	return [2]float32{
 		float32(windowState.Width) / 2.0,

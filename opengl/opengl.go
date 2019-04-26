@@ -109,6 +109,10 @@ func loadTexture(file string, textureUnit uint32) (uint32, uint32, uint32, error
 	draw.Draw(rgba, rgba.Bounds(), image.Transparent, image.ZP, draw.Src)
 	draw.Draw(rgba, rgba.Bounds(), img, image.ZP, draw.Over)
 
+	return TextureFromRGBA(rgba, textureUnit), uint32(rgba.Rect.Size().X), uint32(rgba.Rect.Size().Y), nil
+}
+
+func TextureFromRGBA(rgba *image.RGBA, textureUnit uint32) uint32 {
 	var texture uint32
 	gl.GenTextures(1, &texture)
 	gl.ActiveTexture(textureUnit)
@@ -127,8 +131,7 @@ func loadTexture(file string, textureUnit uint32) (uint32, uint32, uint32, error
 		gl.RGBA,
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(rgba.Pix))
-
-	return texture, uint32(rgba.Rect.Size().X), uint32(rgba.Rect.Size().Y), nil
+	return texture
 }
 
 // CreateShaderProgram : compiles the vertex and fragment shaders, create the program

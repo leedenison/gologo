@@ -53,6 +53,18 @@ var attribLocVertex = gl.Str("vert\x00")
 var attribLocVertexTexCoord = gl.Str("vertTexCoord\x00")
 
 var shaders = map[string]string{
+	"FULLSCREEN_VERTEX_SHADER": `
+#version 330
+
+in vec3 vert;
+in vec2 vertTexCoord;
+out vec2 fragTexCoord;
+
+void main() {
+    fragTexCoord = vertTexCoord;
+    gl_Position = vec4(vert, 1);
+}
+` + "\x00",
 	"ORTHO_VERTEX_SHADER": `
 #version 330
 

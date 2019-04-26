@@ -2,12 +2,28 @@ package gologo
 
 import (
 	"fmt"
+	"image"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/leedenison/gologo/opengl"
 	"github.com/leedenison/gologo/time"
 )
+
+func OverlayBitmap(rgba *image.RGBA) *Object {
+	bitmapRenderer, err := NewBitmapRenderer(rgba)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to create Bitmap renderer: %v\n", err))
+	}
+
+	return &Object{
+		Position: mgl32.Vec3{0.0, 0.0, 0.0},
+		Scale:    1.0,
+		Creation: time.GetTickTime(),
+		ZOrder:   0,
+		Renderer: bitmapRenderer,
+	}
+}
 
 func Rectangle(rect Rect, color mgl32.Vec4) *Object {
 	originX := (rect[0][0] + rect[1][0]) / 2

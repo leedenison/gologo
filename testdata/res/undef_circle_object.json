@@ -1,5 +1,5 @@
 {
-    "Name": "ZEROPRIM_OBJECT",
+    "Name": "UNDEF_CIRCLE_OBJECT",
     "PhysicsPrimitiveType": "CIRCLE",
     "RendererType": "NONE"
 }

@@ -41,8 +41,8 @@ func Init() {
 }
 
 func Run() {
-	for !windowState.Main.ShouldClose() {
-		opengl.ClearBackBuffer()
+	for !ShouldCloseWindow() {
+		ClearWindow()
 		time.Tick()
 
 		if apiCallback != nil {
@@ -53,13 +53,24 @@ func Run() {
 		GenerateForces(time.TimeState.Interval)
 		Integrate(time.TimeState.Interval)
 		ResolveContacts(GenerateContacts())
-		Render()
+		Draw()
 
-		glfw.PollEvents()
+		CheckForUserInput()
 	}
 
 	log.Trace.Println("Exiting.")
-	return
+}
+
+func ShouldCloseWindow() bool {
+	return windowState.Main.ShouldClose()
+}
+
+func ClearWindow() {
+	opengl.ClearBackBuffer()
+}
+
+func CheckForUserInput() {
+	glfw.PollEvents()
 }
 
 func GetScreenWidth() int {
@@ -91,7 +102,8 @@ func CreateTaggedContactGenerator(
 	tag1 string,
 	tag2 string,
 	penetration PenetrationResolver,
-	post PostContactResolver) {
+	post PostContactResolver,
+) {
 	contactGenerators = append(contactGenerators,
 		&TaggedContactGenerator{
 			SourceTag:           tag1,
@@ -110,12 +122,12 @@ func SetScreenEdgeTag(tag string) {
 }
 
 // TODO(leedenison): Add duration to render for animate.
-func Render() {
+func Draw() {
 	// Sort the objects by the rendering zorder
 	sort.Sort(ByZOrder(rendered))
 	for _, object := range rendered {
 		object.Renderer.Animate(object.GetModel())
-		//object.Renderer.DebugRender(object.GetModel())
+		// object.Renderer.DebugRender(object.GetModel())
 		object.Renderer.Render(object.GetModel())
 	}
 	windowState.Main.SwapBuffers()

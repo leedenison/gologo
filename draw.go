@@ -10,14 +10,20 @@ import (
 	"github.com/leedenison/gologo/time"
 )
 
-func OverlayBitmap(rgba *image.RGBA) *Object {
+func Bitmap(origin mgl32.Vec2, rgba *image.RGBA) *Object {
+	bitmap := InvisibleBitmap(origin, rgba)
+	TagRender(bitmap)
+	return bitmap
+}
+
+func InvisibleBitmap(origin mgl32.Vec2, rgba *image.RGBA) *Object {
 	bitmapRenderer, err := NewBitmapRenderer(rgba)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to create Bitmap renderer: %v\n", err))
 	}
 
 	return &Object{
-		Position: mgl32.Vec3{0.0, 0.0, 0.0},
+		Position: mgl32.Vec3{origin[0], origin[1], 0.0},
 		Scale:    1.0,
 		Creation: time.GetTickTime(),
 		ZOrder:   0,
@@ -26,6 +32,12 @@ func OverlayBitmap(rgba *image.RGBA) *Object {
 }
 
 func Rectangle(rect Rect, color mgl32.Vec4) *Object {
+	rectangle := InvisibleRectangle(rect, color)
+	TagRender(rectangle)
+	return rectangle
+}
+
+func InvisibleRectangle(rect Rect, color mgl32.Vec4) *Object {
 	originX := (rect[0][0] + rect[1][0]) / 2
 	originY := (rect[0][1] + rect[1][1]) / 2
 
@@ -89,7 +101,13 @@ func Rectangle(rect Rect, color mgl32.Vec4) *Object {
 	}
 }
 
-func Polygon(origin mgl32.Vec3, sides int, radius float32, color mgl32.Vec4) *Object {
+func Polygon(origin mgl32.Vec2, sides int, radius float32, color mgl32.Vec4) *Object {
+	polygon := InvisiblePolygon(origin, sides, radius, color)
+	TagRender(polygon)
+	return polygon
+}
+
+func InvisiblePolygon(origin mgl32.Vec2, sides int, radius float32, color mgl32.Vec4) *Object {
 	meshVertices := []float32{}
 	angle := 2 * math.Pi / float64(sides)
 
@@ -126,7 +144,7 @@ func Polygon(origin mgl32.Vec3, sides int, radius float32, color mgl32.Vec4) *Ob
 	}
 
 	return &Object{
-		Position: origin,
+		Position: mgl32.Vec3{origin[0], origin[1], 0.0},
 		Scale:    1.0,
 		Creation: time.GetTickTime(),
 		ZOrder:   0,

@@ -85,17 +85,33 @@ func SetTickFunction(f func(int)) {
 	apiCallback = f
 }
 
-func SetKeyPressedFunction(f func(int, Key)) {
+func SetKeyPressedFunction(f func(Key)) {
 	keyPressedCallback = f
 }
 
-func SetKeyReleasedFunction(f func(int, Key)) {
+func SetKeyReleasedFunction(f func(Key)) {
 	keyReleasedCallback = f
 }
 
 func IsPressed(key Key) bool {
 	state := windowState.Main.GetKey(glfw.Key(key))
 	return state == glfw.Press
+}
+
+func SetMouseButtonPressedFunction(f func(MouseButton)) {
+	mouseButtonPressedCallback = f
+}
+
+func SetMouseButtonReleasedFunction(f func(MouseButton)) {
+	mouseButtonReleasedCallback = f
+}
+
+func SetCursorPositionFunction(f func(float64, float64)) {
+	cursorPositionCallback = f
+}
+
+func GetCursorPosition() (float64, float64) {
+	return windowState.Main.GetCursorPos()
 }
 
 func CreateTaggedContactGenerator(

@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/leedenison/gologo/log"
-	"github.com/leedenison/gologo/time"
 )
 
 type WindowState struct {
@@ -54,6 +53,8 @@ func CreateWindow(title string) error {
 	windowState.Main = window
 	windowState.Main.MakeContextCurrent()
 	windowState.Main.SetKeyCallback(KeyCallback)
+	windowState.Main.SetMouseButtonCallback(MouseButtonCallback)
+	windowState.Main.SetCursorPosCallback(CursorPositionCallback)
 
 	return nil
 }
@@ -95,12 +96,36 @@ func KeyCallback(
 	key glfw.Key,
 	scancode int,
 	action glfw.Action,
-	mods glfw.ModifierKey) {
+	mod glfw.ModifierKey,
+) {
 	if action == glfw.Press && key == glfw.KeyEscape {
 		window.SetShouldClose(true)
 	} else if keyPressedCallback != nil && action == glfw.Press {
-		keyPressedCallback(time.GetTickTime(), Key(key))
+		keyPressedCallback(Key(key))
 	} else if keyReleasedCallback != nil && action == glfw.Release {
-		keyReleasedCallback(time.GetTickTime(), Key(key))
+		keyReleasedCallback(Key(key))
+	}
+}
+
+func MouseButtonCallback(
+	window *glfw.Window,
+	button glfw.MouseButton,
+	action glfw.Action,
+	mod glfw.ModifierKey,
+) {
+	if mouseButtonPressedCallback != nil && action == glfw.Press {
+		mouseButtonPressedCallback(MouseButton(button))
+	} else if mouseButtonReleasedCallback != nil && action == glfw.Release {
+		mouseButtonReleasedCallback(MouseButton(button))
+	}
+}
+
+func CursorPositionCallback(
+	window *glfw.Window,
+	x float64,
+	y float64,
+) {
+	if cursorPositionCallback != nil {
+		cursorPositionCallback(x, y)
 	}
 }

@@ -132,3 +132,20 @@ const (
 	KeyMenu         Key = Key(glfw.KeyMenu)
 	KeyLast         Key = Key(glfw.KeyLast)
 )
+
+type MouseButton int
+
+const (
+	MouseButton1      MouseButton = MouseButton(glfw.MouseButton1)
+	MouseButton2      MouseButton = MouseButton(glfw.MouseButton2)
+	MouseButton3      MouseButton = MouseButton(glfw.MouseButton3)
+	MouseButton4      MouseButton = MouseButton(glfw.MouseButton4)
+	MouseButton5      MouseButton = MouseButton(glfw.MouseButton5)
+	MouseButton6      MouseButton = MouseButton(glfw.MouseButton6)
+	MouseButton7      MouseButton = MouseButton(glfw.MouseButton7)
+	MouseButton8      MouseButton = MouseButton(glfw.MouseButton8)
+	MouseButtonLast   MouseButton = MouseButton(glfw.MouseButtonLast)
+	MouseButtonLeft   MouseButton = MouseButton(glfw.MouseButtonLeft)
+	MouseButtonRight  MouseButton = MouseButton(glfw.MouseButtonRight)
+	MouseButtonMiddle MouseButton = MouseButton(glfw.MouseButtonMiddle)
+)

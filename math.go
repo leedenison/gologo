@@ -7,6 +7,8 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+type Rect [2][2]float32
+
 func containsInt(s []int, v int) bool {
 	for _, c := range s {
 		if c == v {
@@ -46,10 +48,10 @@ func getRectMinMax(rect Rect) (float32, float32, float32, float32) {
 }
 
 func Colors(gradients []float64, count int) []color.RGBA {
-	var stride = 4
-	var red = 1
-	var green = 2
-	var blue = 3
+	stride := 4
+	red := 1
+	green := 2
+	blue := 3
 
 	result := []color.RGBA{}
 

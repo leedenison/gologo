@@ -1,16 +1,21 @@
-package maze
+package examples
 
 import (
 	"container/list"
 	"fmt"
 	"math/rand"
+	"sort"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/leedenison/gologo"
+	"github.com/leedenison/gologo/obj"
 )
 
-var callbackMap = []*Maze{}
-var lastCallback = int(0)
+var (
+	tags         = gologo.TagSet{}
+	callbackMap  = []*Maze{}
+	lastCallback = int(0)
+)
 
 func mazeTickCallback(tick int) {
 	if tick-lastCallback > DEFAULT_TICK_INCREMENT {
@@ -24,13 +29,16 @@ func mazeTickCallback(tick int) {
 	}
 }
 
-var DEFAULT_SCREEN_SIZE_FACTOR = float32(0.8)
-var DEFAULT_WALL_WIDTH_FACTOR = float32(0.1)
-var DEFAULT_ROOM_BORDER_FACTOR = float32(0.2)
+var (
+	DEFAULT_SCREEN_SIZE_FACTOR = float32(0.8)
+	DEFAULT_WALL_WIDTH_FACTOR  = float32(0.1)
+	DEFAULT_ROOM_BORDER_FACTOR = float32(0.2)
+)
 
 var DEFAULT_TICK_INCREMENT = 200
 
 type Maze struct {
+	Gologo         *gologo.Gologo
 	Size           [2]int
 	Start          [2]int
 	End            [2]int
@@ -142,18 +150,28 @@ func (maze *Maze) DoMove() {
 }
 
 func Run(x, y int, callback func(*Maze)) {
-	defer gologo.Cleanup()
-	gologo.Init()
+	g := gologo.Init()
+	defer g.Close()
 
-	maze := GenerateMaze([2]int{x, y}, callback)
+	maze := GenerateMaze(g, [2]int{x, y}, callback)
 	callbackMap = append(callbackMap, maze)
 
-	gologo.SetTickFunction(mazeTickCallback)
-	gologo.Run()
+	for !g.Window.ShouldClose() {
+		g.ClearBackBuffer()
+
+		r := tags.GetAll("render")
+		sort.Sort(gologo.ByZOrder(r))
+		for _, object := range r {
+			object.Draw()
+		}
+
+		g.Window.SwapBuffers()
+		g.CheckForEvents()
+	}
 }
 
-func GenerateMaze(size [2]int, callback func(*Maze)) *Maze {
-	maze := initializeMaze(size)
+func GenerateMaze(g *gologo.Gologo, size [2]int, callback func(*Maze)) *Maze {
+	maze := initializeMaze(g, size)
 	rooms := initializeRooms(size)
 	roomsList := list.New()
 
@@ -176,11 +194,11 @@ func GenerateMaze(size [2]int, callback func(*Maze)) *Maze {
 }
 
 func calcRenderSize(maze *Maze) {
-	windowSize := gologo.GetWindowSize()
-	windowCenter := gologo.GetWindowCenter()
-	screenDim := windowSize[0]
-	if screenDim > windowSize[1] {
-		screenDim = windowSize[1]
+	winX, winY := maze.Gologo.Window.GetSize()
+	windowCenter := maze.Gologo.GetWindowCenter()
+	screenDim := float32(winX)
+	if screenDim > float32(winY) {
+		screenDim = float32(winY)
 	}
 	roomDim := maze.Size[0]
 	if roomDim < maze.Size[1] {
@@ -195,9 +213,10 @@ func calcRenderSize(maze *Maze) {
 	}
 }
 
-func initializeMaze(size [2]int) *Maze {
+func initializeMaze(g *gologo.Gologo, size [2]int) *Maze {
 	result := &Maze{
-		Size: size,
+		Gologo: g,
+		Size:   size,
 		Start: [2]int{
 			rand.Intn(size[0]),
 			0,
@@ -212,13 +231,13 @@ func initializeMaze(size [2]int) *Maze {
 	wallWidth := result.RoomSize * DEFAULT_WALL_WIDTH_FACTOR
 	halfWallLength := (result.RoomSize + wallWidth) / 2
 	halfWallWidth := wallWidth / 2
-	horizontalWall := gologo.Rectangle(
+	horizontalWall := obj.Rectangle(
 		gologo.Rect{
 			{-halfWallLength, -halfWallWidth},
 			{halfWallLength, halfWallWidth},
 		},
 		mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
-	verticalWall := gologo.Rectangle(
+	verticalWall := obj.Rectangle(
 		gologo.Rect{
 			{-halfWallWidth, -halfWallLength},
 			{halfWallWidth, halfWallLength},
@@ -263,7 +282,7 @@ func initializeStart(maze *Maze) *gologo.Object {
 		maze.BottomLeft[0] + float32(maze.Start[0])*maze.RoomSize + roomBorder,
 		maze.BottomLeft[1] + float32(maze.Start[1])*maze.RoomSize + roomBorder,
 	}
-	start := gologo.Rectangle(
+	start := obj.Rectangle(
 		gologo.Rect{
 			startBottomLeft,
 			{
@@ -272,7 +291,7 @@ func initializeStart(maze *Maze) *gologo.Object {
 			},
 		},
 		mgl32.Vec4{0.0, 1.0, 0.0, 1.0})
-	gologo.TagRender(start)
+	tags.Tag(start, "render")
 	return start
 }
 
@@ -282,7 +301,7 @@ func initializeEnd(maze *Maze) {
 		maze.BottomLeft[0] + float32(maze.End[0])*maze.RoomSize + roomBorder,
 		maze.BottomLeft[1] + float32(maze.End[1])*maze.RoomSize + roomBorder,
 	}
-	end := gologo.Rectangle(
+	end := obj.Rectangle(
 		gologo.Rect{
 			endBottomLeft,
 			{
@@ -291,11 +310,11 @@ func initializeEnd(maze *Maze) {
 			},
 		},
 		mgl32.Vec4{1.0, 0.0, 0.0, 1.0})
-	gologo.TagRender(end)
+	tags.Tag(end, "render")
 }
 
 func initializeBorder(mazeSize [2]int, bottomLeft [2]float32, roomSize float32, halfWallWidth float32) {
-	bottom := gologo.Rectangle(
+	bottom := obj.Rectangle(
 		gologo.Rect{
 			{
 				bottomLeft[0] - halfWallWidth,
@@ -308,7 +327,7 @@ func initializeBorder(mazeSize [2]int, bottomLeft [2]float32, roomSize float32, 
 		},
 		mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
 
-	top := gologo.Rectangle(
+	top := obj.Rectangle(
 		gologo.Rect{
 			{
 				bottomLeft[0] - halfWallWidth,
@@ -321,7 +340,7 @@ func initializeBorder(mazeSize [2]int, bottomLeft [2]float32, roomSize float32, 
 		},
 		mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
 
-	left := gologo.Rectangle(
+	left := obj.Rectangle(
 		gologo.Rect{
 			{
 				bottomLeft[0] - halfWallWidth,
@@ -334,7 +353,7 @@ func initializeBorder(mazeSize [2]int, bottomLeft [2]float32, roomSize float32, 
 		},
 		mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
 
-	right := gologo.Rectangle(
+	right := obj.Rectangle(
 		gologo.Rect{
 			{
 				bottomLeft[0] + float32(mazeSize[0])*roomSize - halfWallWidth,
@@ -347,10 +366,10 @@ func initializeBorder(mazeSize [2]int, bottomLeft [2]float32, roomSize float32, 
 		},
 		mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
 
-	gologo.TagRender(bottom)
-	gologo.TagRender(top)
-	gologo.TagRender(left)
-	gologo.TagRender(right)
+	tags.Tag(bottom, "render")
+	tags.Tag(top, "render")
+	tags.Tag(left, "render")
+	tags.Tag(right, "render")
 }
 
 func initializeWalls(
@@ -358,13 +377,14 @@ func initializeWalls(
 	wall *gologo.Object,
 	mazeOffset [2]float32,
 	roomSize float32,
-	wallOffset [2]float32) [][]*gologo.Object {
+	wallOffset [2]float32,
+) [][]*gologo.Object {
 	result := make([][]*gologo.Object, size[0])
 	for i := range result {
 		result[i] = make([]*gologo.Object, size[1])
 		for j := range result[i] {
 			result[i][j] = wall.Clone()
-			gologo.TagRender(result[i][j])
+			tags.Tag(result[i][j], "render")
 			result[i][j].Position = mgl32.Vec3{
 				mazeOffset[0] + float32(i)*roomSize + wallOffset[0],
 				mazeOffset[1] + float32(j)*roomSize + wallOffset[1],
@@ -458,19 +478,19 @@ func removeIfCompleted(maze *Maze, rooms [][]bool, roomsList *list.List, room [2
 
 func removeWall(maze *Maze, from [2]int, to [2]int) {
 	if from[0] < to[0] {
-		gologo.UntagRender(maze.VWalls[from[0]][from[1]])
+		tags.Untag(maze.VWalls[from[0]][from[1]], "render")
 		maze.VWalls[from[0]][from[1]] = nil
 	}
 	if from[0] > to[0] {
-		gologo.UntagRender(maze.VWalls[to[0]][to[1]])
+		tags.Untag(maze.VWalls[to[0]][to[1]], "render")
 		maze.VWalls[to[0]][to[1]] = nil
 	}
 	if from[1] < to[1] {
-		gologo.UntagRender(maze.HWalls[from[0]][from[1]])
+		tags.Untag(maze.HWalls[from[0]][from[1]], "render")
 		maze.HWalls[from[0]][from[1]] = nil
 	}
 	if from[1] > to[1] {
-		gologo.UntagRender(maze.HWalls[to[0]][to[1]])
+		tags.Untag(maze.HWalls[to[0]][to[1]], "render")
 		maze.HWalls[to[0]][to[1]] = nil
 	}
 }

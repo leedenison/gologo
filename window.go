@@ -8,71 +8,43 @@ import (
 	"github.com/leedenison/gologo/log"
 )
 
-type WindowState struct {
-	Main   *glfw.Window
-	Width  int
-	Height int
-}
+const (
+	resourcePath  = "res"
+	pathSeparator = "/"
+)
+
+var executablePath string
+
+const (
+	mainWindow      = "GOLOGO_MAIN"
+	defaultTitle    = "Gologo!"
+	defaultWinSizeX = 1024
+	defaultWinSizeY = 768
+)
 
 func init() {
-	windowState.Width = defaultWinSizeX
-	windowState.Height = defaultWinSizeY
-
 	_, err := GetExecutablePath()
 	if err != nil {
 		log.Error.Fatalln("Failed to determine executable path:", err)
 	}
 }
 
-func InitWindow() error {
-	if err := glfw.Init(); err != nil {
-		log.Error.Println("glfw.Init failed:", err)
-		return err
-	}
-
-	process.RegisterCleanup(Cleanup)
-	return nil
-}
-
-func Cleanup() {
-	glfw.Terminate()
-}
-
-func CreateWindow(title string) error {
+func CreateWindow(title string, width int, height int) (*glfw.Window, error) {
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	window, err := glfw.CreateWindow(windowState.Width, windowState.Height, title, nil, nil)
+	window, err := glfw.CreateWindow(width, height, title, nil, nil)
 	if err != nil {
-		log.Error.Println("glfw.CreateWindow failed:", err)
+		return nil, err
 	}
 
-	windowState.Main = window
-	windowState.Main.MakeContextCurrent()
-	windowState.Main.SetKeyCallback(KeyCallback)
-	windowState.Main.SetMouseButtonCallback(MouseButtonCallback)
-	windowState.Main.SetCursorPosCallback(CursorPositionCallback)
+	window.MakeContextCurrent()
+	window.SetKeyCallback(KeyCallback)
 
-	return nil
-}
-
-func GetWindowSize() [2]float32 {
-	return [2]float32{float32(windowState.Width), float32(windowState.Height)}
-}
-
-func SetWindowSize(s [2]int) {
-	windowState.Width = s[0]
-	windowState.Height = s[1]
-}
-
-func GetWindowCenter() [2]float32 {
-	return [2]float32{
-		float32(windowState.Width) / 2.0,
-		float32(windowState.Height) / 2.0,
-	}
+	return window, nil
 }
 
 func GetResourcePath() string {
@@ -100,32 +72,5 @@ func KeyCallback(
 ) {
 	if action == glfw.Press && key == glfw.KeyEscape {
 		window.SetShouldClose(true)
-	} else if keyPressedCallback != nil && action == glfw.Press {
-		keyPressedCallback(Key(key))
-	} else if keyReleasedCallback != nil && action == glfw.Release {
-		keyReleasedCallback(Key(key))
-	}
-}
-
-func MouseButtonCallback(
-	window *glfw.Window,
-	button glfw.MouseButton,
-	action glfw.Action,
-	mod glfw.ModifierKey,
-) {
-	if mouseButtonPressedCallback != nil && action == glfw.Press {
-		mouseButtonPressedCallback(MouseButton(button))
-	} else if mouseButtonReleasedCallback != nil && action == glfw.Release {
-		mouseButtonReleasedCallback(MouseButton(button))
-	}
-}
-
-func CursorPositionCallback(
-	window *glfw.Window,
-	x float64,
-	y float64,
-) {
-	if cursorPositionCallback != nil {
-		cursorPositionCallback(x, y)
 	}
 }

@@ -1,4 +1,4 @@
-package gologo
+package obj
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
@@ -87,10 +87,10 @@ func calcSingleSegment(points []mgl32.Vec2) [4]mgl32.Vec2 {
 	}
 
 	segment := [4]mgl32.Vec2{
-		mgl32.Vec2{points[0].X(), points[0].X()},
+		{points[0].X(), points[0].X()},
 		control1,
 		control2,
-		mgl32.Vec2{points[1].Y(), points[1].Y()},
+		{points[1].Y(), points[1].Y()},
 	}
 
 	return segment

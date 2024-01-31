@@ -4,9 +4,6 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/leedenison/gologo/render"
-	"github.com/leedenison/gologo/time"
-	"github.com/pkg/errors"
 )
 
 // Object : Struct to hold fundamental object for gologo
@@ -14,27 +11,27 @@ import (
 // Orientation is the rotation of the object in radians
 // ZOrder is the gologo managed height order of the objects - 0 is valid
 // Creation is a automatically managed time the object was created
-// Primitive is the physics primitive for this object - can be nil
 // Renderer is the gl renderer for this object - can be nil
-// Body is the RigidBody physics data for this object - can be nil
 type Object struct {
 	Position    mgl32.Vec3
 	Orientation float64
 	Scale       float64
 	ZOrder      int
 	Creation    int
-	Primitive   Primitive
-	Renderer    render.Renderer
-	Body        *RigidBody
+	Renderer    Renderer
 }
 
-// CreateObject Main function to create a standard object
-// requires a position to create an object
 func CreateObject(position mgl32.Vec3) *Object {
 	return &Object{
 		Position: position,
-		Creation: time.GetTickTime(),
+		Creation: GetTickTime(),
 	}
+}
+
+func (o *Object) Draw() {
+	o.Renderer.Animate(o.GetModel())
+	// o.Renderer.DebugRender(o.GetModel())
+	o.Renderer.Render(o.GetModel())
 }
 
 // GetModel : Returns the model for this object
@@ -50,17 +47,9 @@ func (o *Object) WorldSpace(c mgl32.Vec3) mgl32.Vec3 {
 	return o.GetModel().Mul4x1(c.Vec4(1.0)).Vec3()
 }
 
-// Integrate : Updates RigidBody velocity and then updates the Model matrix with the result
-func (o *Object) Integrate(duration float64) {
-	linear, angular := o.Body.Integrate(duration)
-	o.Position = o.Position.Add(linear)
-	// Normalize the orientation to be within the first 2 pi radians
-	o.Orientation = math.Mod(o.Orientation+angular, math.Pi*2)
-}
-
 // GetAge : Returns age of object since creation
 func (o *Object) GetAge() int {
-	return time.GetTickTime() - o.Creation
+	return GetTickTime() - o.Creation
 }
 
 // GetPosition : Returns X and Y co-ords of object centre in 2D
@@ -130,52 +119,17 @@ func (o *Object) SetZOrder(z int) {
 }
 
 // GetRenderer : Returns the renderer for this object
-func (o *Object) GetRenderer() render.Renderer {
+func (o *Object) GetRenderer() Renderer {
 	return o.Renderer
 }
 
 // SetRenderer : Sets the renderer for this object, optionally cloning it
-func (o *Object) SetRenderer(renderer render.Renderer, clone bool) {
+func (o *Object) SetRenderer(renderer Renderer, clone bool) {
 	if clone {
 		o.Renderer = renderer.Clone()
 	} else {
 		o.Renderer = renderer
 	}
-}
-
-// GetPrimitive : Returns the primitive for this object
-func (o *Object) GetPrimitive() Primitive {
-	return o.Primitive
-}
-
-// SetPrimitive : Sets the primitive for this object, optionally cloning it
-// and deriving default values if needed
-func (o *Object) SetPrimitive(primitive Primitive, clone bool) error {
-	if clone {
-		o.Primitive = primitive.Clone()
-	} else {
-		o.Primitive = primitive
-	}
-
-	return nil
-}
-
-// InitialisePrimitive : Creates a default primitive for this object.
-// Will use the mesh to calculate the primitive
-// Will return an error if the Renderer is not set, the Renderer is not
-// of type MeshRenderer, or has no vertices
-func (o *Object) InitialisePrimitive() error {
-	if o.Renderer == nil {
-		return errors.New("object has no renderer")
-	}
-
-	err := o.Primitive.InitFromRenderer(o.Renderer)
-
-	if err != nil {
-		return errors.Wrap(err, "failed to initialise primitive from renderer")
-	}
-
-	return nil
 }
 
 // Clone : creates a distinct copy of the receiving object
@@ -186,14 +140,10 @@ func (o *Object) Clone() *Object {
 		objectCopy.Renderer = o.Renderer.Clone()
 	}
 
-	if o.Primitive != nil {
-		objectCopy.Primitive = o.Primitive.Clone()
-	}
-
 	return &objectCopy
 }
 
-// OriginIsContainedInRect : returns true if the object primitive
+// OriginIsContainedInRect : returns true if the object origin
 // is contained within the supplied rect
 func (o *Object) OriginIsContainedInRect(rect Rect) bool {
 	x, y := o.GetPosition()

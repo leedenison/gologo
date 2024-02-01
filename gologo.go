@@ -1,6 +1,6 @@
-// gologo provides a simplified drawing API for learning to code.
+// Package gologo provides a simplified drawing API for learning to code.
 //
-// gologo uses OpenGL to provide a cross platform drawing API that
+// gologo uses OpenGL to provide a cross platform drawing API but
 // abstracts away the complexities of OpenGL.
 //
 // A minimal, example gologo program to display a window and wait for it to

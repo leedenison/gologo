@@ -1,7 +1,6 @@
 package gologo
 
 import (
-	"image/color"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -45,30 +44,4 @@ func getRectMinMax(rect Rect) (float32, float32, float32, float32) {
 	}
 
 	return xMin, xMax, yMin, yMax
-}
-
-func Colors(gradients []float64, count int) []color.RGBA {
-	stride := 4
-	red := 1
-	green := 2
-	blue := 3
-
-	result := []color.RGBA{}
-
-	for i := 0; i < count; i++ {
-		q := float64(i) / float64(count)
-
-		for j := stride; j < len(gradients); j += stride {
-			if q < gradients[j] {
-				p := q - gradients[j-stride]
-				r := uint8((gradients[j+red]-gradients[j-stride+red])*p + gradients[j-stride+red])
-				g := uint8((gradients[j+green]-gradients[j-stride+green])*p + gradients[j-stride+green])
-				b := uint8((gradients[j+blue]-gradients[j-stride+blue])*p + gradients[j-stride+blue])
-				result = append(result, color.RGBA{r, g, b, 255})
-				break
-			}
-		}
-	}
-
-	return result
 }

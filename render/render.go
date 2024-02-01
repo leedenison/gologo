@@ -1,4 +1,4 @@
-package gologo
+package render
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/leedenison/gologo/log"
+	"github.com/leedenison/gologo/time"
 )
 
 // GLState : Stores the shaders, textures, and projection
@@ -16,10 +17,6 @@ type GLState struct {
 	Textures        map[string]*GLTexture
 	NextTextureUnit int32
 	Projection      mgl32.Mat4
-}
-
-func (s *GLState) Set2DProjection(width float32, height float32) {
-	s.Projection = mgl32.Ortho2D(0, width, 0, height)
 }
 
 type Renderer interface {
@@ -78,6 +75,10 @@ func InitOpenGL() error {
 
 func ClearBackBuffer() {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+}
+
+func Set2DProjection(width float32, height float32) {
+	glState.Projection = mgl32.Ortho2D(0, width, 0, height)
 }
 
 /////////////////////////////////////////////////////////////
@@ -279,7 +280,7 @@ func (r *ExplosionRenderer) Render(model mgl32.Mat4) {
 
 func (r *ExplosionRenderer) RenderAt(model mgl32.Mat4, custom map[int]interface{}) {
 	for i := 0; i < len(r.Particles); i++ {
-		age := float64(GetTickTime()) - r.Particles[i].Age
+		age := float64(time.GetTickTime()) - r.Particles[i].Age
 		r.Particles[i].Renderer.RenderAt(
 			model.Mul4(r.Particles[i].Model),
 			map[int]interface{}{
@@ -305,7 +306,7 @@ func (r *ExplosionRenderer) Animate(model mgl32.Mat4) {
 	}
 
 	for j := 0; j < len(r.Particles); j++ {
-		age := float64(GetTickTime()) - r.Particles[j].Age
+		age := float64(time.GetTickTime()) - r.Particles[j].Age
 		if age >= r.MaxAge {
 			if len(r.Particles) > 1 {
 				r.Particles = append(r.Particles[:j], r.Particles[j+1:]...)
@@ -327,7 +328,7 @@ func (r *ExplosionRenderer) createRandomParticle() *Particle {
 	return &Particle{
 		Renderer: r.Renderers[renderer],
 		Velocity: velocity,
-		Age:      float64(GetTickTime()),
+		Age:      float64(time.GetTickTime()),
 		Model:    mgl32.Ident4(),
 	}
 }

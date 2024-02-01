@@ -1,4 +1,4 @@
-package gologo
+package render
 
 import (
 	"os"
@@ -16,10 +16,7 @@ const (
 var executablePath string
 
 const (
-	mainWindow      = "GOLOGO_MAIN"
-	defaultTitle    = "Gologo!"
-	defaultWinSizeX = 1024
-	defaultWinSizeY = 768
+	mainWindow = "GOLOGO_MAIN"
 )
 
 func init() {

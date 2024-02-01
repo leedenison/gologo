@@ -1,3 +1,27 @@
+// gologo provides a simplified drawing API for learning to code.
+//
+// gologo uses OpenGL to provide a cross platform drawing API that
+// abstracts away the complexities of OpenGL.
+//
+// A minimal, example gologo program to display a window and wait for it to
+// be closed, might be:
+//
+//	package main
+//
+//	import (
+//		"github.com/leedenison/gologo"
+//	)
+//
+//	func main() {
+//		// Create and display the main window
+//		g := gologo.Init()
+//		defer g.Close()
+//
+//		// Loop and check if the window has been closed
+//		for !g.Window.ShouldClose() {
+//			g.CheckForEvents()
+//		}
+//	}
 package gologo
 
 import (
@@ -6,6 +30,8 @@ import (
 
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/leedenison/gologo/log"
+	"github.com/leedenison/gologo/render"
+	"github.com/leedenison/gologo/time"
 )
 
 type Gologo struct {
@@ -17,6 +43,12 @@ type Config struct {
 	Height int
 	Title  string
 }
+
+const (
+	defaultTitle    = "Gologo!"
+	defaultWinSizeX = 1024
+	defaultWinSizeY = 768
+)
 
 func init() {
 	// Make sure main thread is locked so that OpenGL calls
@@ -41,19 +73,19 @@ func InitWithConfig(config Config) *Gologo {
 		log.Error.Fatalln("glfw.Init failed:", err)
 	}
 
-	window, err := CreateWindow(config.Title, config.Width, config.Height)
+	window, err := render.CreateWindow(config.Title, config.Width, config.Height)
 	if err != nil {
 		log.Error.Fatalln("window.CreateWindow failed:", err)
 	}
 
 	width, height := window.GetSize()
-	glState.Set2DProjection(float32(width), float32(height))
+	render.Set2DProjection(float32(width), float32(height))
 
-	if err := InitOpenGL(); err != nil {
+	if err := render.InitOpenGL(); err != nil {
 		log.Error.Fatalln("InitOpenGL failed:", err)
 	}
 
-	if err := InitTick(); err != nil {
+	if err := time.InitTick(); err != nil {
 		log.Error.Fatalln("InitTick failed:", err)
 	}
 
@@ -72,7 +104,7 @@ func (g *Gologo) GetWindowCenter() [2]float32 {
 
 func (g *Gologo) ClearBackBuffer() {
 	// Clear the OpenGL back buffer
-	ClearBackBuffer()
+	render.ClearBackBuffer()
 }
 
 func (g *Gologo) CheckForEvents() {

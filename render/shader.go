@@ -1,4 +1,4 @@
-package gologo
+package render
 
 import (
 	"fmt"

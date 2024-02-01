@@ -4,6 +4,8 @@ import (
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/leedenison/gologo/render"
+	"github.com/leedenison/gologo/time"
 )
 
 // Object : Struct to hold fundamental object for gologo
@@ -18,13 +20,13 @@ type Object struct {
 	Scale       float64
 	ZOrder      int
 	Creation    int
-	Renderer    Renderer
+	Renderer    render.Renderer
 }
 
 func CreateObject(position mgl32.Vec3) *Object {
 	return &Object{
 		Position: position,
-		Creation: GetTickTime(),
+		Creation: time.GetTickTime(),
 	}
 }
 
@@ -49,7 +51,7 @@ func (o *Object) WorldSpace(c mgl32.Vec3) mgl32.Vec3 {
 
 // GetAge : Returns age of object since creation
 func (o *Object) GetAge() int {
-	return GetTickTime() - o.Creation
+	return time.GetTickTime() - o.Creation
 }
 
 // GetPosition : Returns X and Y co-ords of object centre in 2D
@@ -119,12 +121,12 @@ func (o *Object) SetZOrder(z int) {
 }
 
 // GetRenderer : Returns the renderer for this object
-func (o *Object) GetRenderer() Renderer {
+func (o *Object) GetRenderer() render.Renderer {
 	return o.Renderer
 }
 
 // SetRenderer : Sets the renderer for this object, optionally cloning it
-func (o *Object) SetRenderer(renderer Renderer, clone bool) {
+func (o *Object) SetRenderer(renderer render.Renderer, clone bool) {
 	if clone {
 		o.Renderer = renderer.Clone()
 	} else {

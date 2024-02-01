@@ -9,10 +9,11 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/leedenison/gologo"
 	"github.com/leedenison/gologo/obj"
+	"github.com/leedenison/gologo/tags"
 )
 
 var (
-	tags         = gologo.TagSet{}
+	tagged       = tags.TagSet{}
 	callbackMap  = []*Maze{}
 	lastCallback = int(0)
 )
@@ -159,7 +160,7 @@ func Run(x, y int, callback func(*Maze)) {
 	for !g.Window.ShouldClose() {
 		g.ClearBackBuffer()
 
-		r := tags.GetAll("render")
+		r := tagged.GetAll("render")
 		sort.Sort(gologo.ByZOrder(r))
 		for _, object := range r {
 			object.Draw()
@@ -291,7 +292,7 @@ func initializeStart(maze *Maze) *gologo.Object {
 			},
 		},
 		mgl32.Vec4{0.0, 1.0, 0.0, 1.0})
-	tags.Tag(start, "render")
+	tagged.Tag(start, "render")
 	return start
 }
 
@@ -310,7 +311,7 @@ func initializeEnd(maze *Maze) {
 			},
 		},
 		mgl32.Vec4{1.0, 0.0, 0.0, 1.0})
-	tags.Tag(end, "render")
+	tagged.Tag(end, "render")
 }
 
 func initializeBorder(mazeSize [2]int, bottomLeft [2]float32, roomSize float32, halfWallWidth float32) {
@@ -366,10 +367,10 @@ func initializeBorder(mazeSize [2]int, bottomLeft [2]float32, roomSize float32, 
 		},
 		mgl32.Vec4{1.0, 1.0, 1.0, 1.0})
 
-	tags.Tag(bottom, "render")
-	tags.Tag(top, "render")
-	tags.Tag(left, "render")
-	tags.Tag(right, "render")
+	tagged.Tag(bottom, "render")
+	tagged.Tag(top, "render")
+	tagged.Tag(left, "render")
+	tagged.Tag(right, "render")
 }
 
 func initializeWalls(
@@ -384,7 +385,7 @@ func initializeWalls(
 		result[i] = make([]*gologo.Object, size[1])
 		for j := range result[i] {
 			result[i][j] = wall.Clone()
-			tags.Tag(result[i][j], "render")
+			tagged.Tag(result[i][j], "render")
 			result[i][j].Position = mgl32.Vec3{
 				mazeOffset[0] + float32(i)*roomSize + wallOffset[0],
 				mazeOffset[1] + float32(j)*roomSize + wallOffset[1],
@@ -478,19 +479,19 @@ func removeIfCompleted(maze *Maze, rooms [][]bool, roomsList *list.List, room [2
 
 func removeWall(maze *Maze, from [2]int, to [2]int) {
 	if from[0] < to[0] {
-		tags.Untag(maze.VWalls[from[0]][from[1]], "render")
+		tagged.Untag(maze.VWalls[from[0]][from[1]], "render")
 		maze.VWalls[from[0]][from[1]] = nil
 	}
 	if from[0] > to[0] {
-		tags.Untag(maze.VWalls[to[0]][to[1]], "render")
+		tagged.Untag(maze.VWalls[to[0]][to[1]], "render")
 		maze.VWalls[to[0]][to[1]] = nil
 	}
 	if from[1] < to[1] {
-		tags.Untag(maze.HWalls[from[0]][from[1]], "render")
+		tagged.Untag(maze.HWalls[from[0]][from[1]], "render")
 		maze.HWalls[from[0]][from[1]] = nil
 	}
 	if from[1] > to[1] {
-		tags.Untag(maze.HWalls[to[0]][to[1]], "render")
+		tagged.Untag(maze.HWalls[to[0]][to[1]], "render")
 		maze.HWalls[to[0]][to[1]] = nil
 	}
 }
